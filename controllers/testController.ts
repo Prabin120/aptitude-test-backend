@@ -17,7 +17,6 @@ const markCalculations = async (answers: any, testId: string) => {
                 correctMarks += question.marks;
             }
         }
-        console.log(answer, correctAnswer, correctMarks, question.marks);
         totalMarks += question.marks;
     });
     return [correctMarks, totalMarks];
@@ -54,9 +53,7 @@ const submitTest = async(req:ICustomRequest, res:Response)=>{
     try {
         const userId = req.userId;
         const {answers} = req.body;
-        const {testId} = req.query;
-        console.log(answers, testId);
-        
+        const {testId} = req.query;        
         const userTest = await UserTest.findOne({ user: userId, test: testId});
         if(!userTest){
             return res.status(404).json({message: "Test not found"});
@@ -71,12 +68,10 @@ const submitTest = async(req:ICustomRequest, res:Response)=>{
         }
         userTest.answers = answers??{};
         userTest.attempted = true;
-        // console.log(answers);
         const [correctMarks, totalMarks] = await markCalculations(answers, testId as string);
         userTest.marksAchieved = correctMarks??0;
         userTest.totalMarks = totalMarks;
         await userTest.save();
-        console.log(userTest);
         return res.status(200).json({message: "Test submitted successfully"});
     } catch (error) {
         console.log(error);
@@ -124,7 +119,7 @@ const registerTest = async(req:ICustomRequest, res:Response)=>{
         if(userTestExists){
             return res.status(400).json({message: "You have already registered for this test"});
         }
-        await UserTest.create({user: userId, test: test._id, bookedTime: mergedDate, paid: true, duration: 120});
+        await UserTest.create({user: userId, test: test._id, bookedTime: mergedDate, paid: true, duration: test.duration});
         return res.status(200).json({message: "Test registered successfully"});
     } catch (error) {
         console.log(error);
