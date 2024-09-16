@@ -15,6 +15,8 @@ const paymentSchema = new mongoose.Schema<IPayment>({
     paymentId: {type: String, required: true},
     paymentMethod: {type: String, required: true},
     amount: {type: Number, required: true}
+},{
+    timestamps: true
 });
 
 const Payment = mongoose.model<IPayment>('Payment', paymentSchema);

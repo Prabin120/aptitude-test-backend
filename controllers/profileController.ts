@@ -1,7 +1,6 @@
 import { Response } from "express";
 import ICustomRequest from "../utils/customRequest";
 import User from "../models/user";
-import bcrypt from 'bcrypt';
 
 const profile = async(req:ICustomRequest, res:Response)=>{
     const userId = req.userId;
