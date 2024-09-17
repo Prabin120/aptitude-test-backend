@@ -57,7 +57,9 @@ const signUp = async (req: ICustomRequest, res: Response) => {
         })
         .status(201).json({
             message: "User registered successfully",
-            data: newUser
+            data: {id: newUser._id, name: newUser.name, email: newUser.email, 
+                mobile: newUser.mobile, institute: newUser.institute
+            }
         });
     } catch (error) {
         console.error(error);
@@ -93,7 +95,9 @@ const login = async (req: ICustomRequest, res: Response) => {
         })
         .status(200).json({
             message: "Login successful",
-            data: user
+            data: {id: user._id, name: user.name, email: user.email, 
+                mobile: user.mobile, institute: user.institute
+            }
         });
     } catch (error) {
         console.error(error);
@@ -121,8 +125,16 @@ const changePassword = async(req:ICustomRequest, res:Response)=>{
     }
 }
 
+const logout = async(req: ICustomRequest, res: Response) => {
+    res.clearCookie('access_token', { httpOnly: true});
+    // res.clearCookie('refresh_token', { httpOnly: true});
+
+    return res.status(200).json({ message: "Logout successful" });
+};
+
+
 const validToken = async(req: Request,res: Response)=>{
     return res.status(200);
 }
 
-export {signUp, login, validToken, changePassword};
+export {signUp, login, validToken, changePassword, logout};

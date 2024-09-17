@@ -30,7 +30,15 @@ const editProfile = async(req:ICustomRequest, res:Response)=>{
         user.mobile = mobile || user.mobile;
         user.institute = institute;
         await user.save();
-        return res.status(200).json({message: "Profile updated successfully", data: user});
+        return res.status(200).json({message: "Profile updated successfully",
+            data: {
+                name: user.name,
+                mobile: user.mobile,
+                institute: user.institute,
+                email: user.email,
+                _id: user._id
+            }
+        });
     } catch (error) {
         console.log("error", error);
         return res.status(500).json({message: "Server error"});

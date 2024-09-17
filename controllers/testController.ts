@@ -27,15 +27,16 @@ const getTest = async(req:ICustomRequest, res:Response)=>{
     const {testId} = req.query;
     try {
         const userTest = await UserTest.findOne({ user: userId, test: testId});
-        if(!userTest){
+        const test = await Test.findById(testId);
+        if(!userTest || !test){
             return res.status(404).json({message: "Test not found"});
         }
         if(!userTest.paid){
             userTest.test = "";
             return res.status(404).json(userTest);
         }
-        const test = await Test.findById(testId);
-        const questions = await Question.find({questionNo: {$in: test?.questions}});
+        const questions = await Question.find({questionNo: {$in: test.questions}},
+             '-answer -createdAt -updatedAt -__v');  
         const data = {
             test,
             questions,
@@ -82,21 +83,26 @@ const submitTest = async(req:ICustomRequest, res:Response)=>{
 const upcomingTest = async(req:ICustomRequest, res:Response)=>{
     try{
         const userId = req.userId;       
-        const attemptedTest = await UserTest.findOne({ user: userId, attempted: true}).sort({createdAt:-1}); 
-        if(attemptedTest){
-            return res.status(200).json({registered: true, attemptedTest: true, data: attemptedTest});
-        }
-        const userTest = await UserTest.findOne({ user: userId }).sort({createdAt:-1});
+        // const attemptedTest = await UserTest.findOne({ user: userId, attempted: true}).sort({createdAt:-1}); 
+        const userTest = await UserTest.findOne({ user: userId }, 
+            '-answers -createdAt -updatedAt -__v')
+            .sort({createdAt:-1});
         if(!userTest){
             return res.status(200).json({registered: false, attemptedTest: false, data: null});
         }
-        // console.log(userTest);
+        if(userTest.attempted){
+            return res.status(200).json({registered: true, attemptedTest: true, data: userTest});
+        }
         const bookedTime = userTest.bookedTime.getTime();
         const upperTime = bookedTime + (userTest.duration * 1000 * 60)
         if(upperTime < Date.now()){
             return res.status(200).json({registered: false, attemptedTest: false});
         }
-        return res.status(200).json({registered: true, data: userTest, attemptedTest: false});
+        return res.status(200).json({
+            registered: true, 
+            attemptedTest: false,
+            data: userTest,
+        });
     } catch(error){
         console.log(error);
         return res.status(500).json({message: "Server error", registered: true, data: null, attemptedTest: false});
@@ -163,15 +169,16 @@ const scoreCard = async(req:ICustomRequest, res:Response)=>{
     const userId = req.userId;
     const {testId} = req.query;
     try {
-        const userTest = await UserTest.findOne({user: userId, test: testId});        
-        if(!userTest){
-            return res.status(404).json({message: "No test found"});
-        }
+        const userTest = await UserTest.findOne({user: userId, test: testId},
+            "-createdAt -updatedAt -__v -paid -bookedTime -duration -attempted"
+        );
         const test = await Test.findById(testId);
-        if(!test){
+        if(!userTest || !test){
             return res.status(404).json({message: "No test found"});
         }
-        const questions = await Question.find({questionNo: {$in: test.questions}});        
+        const questions = await Question.find({questionNo: {$in: test.questions}},
+            "-createdAt -updatedAt -__v"
+        );
         if(!questions){
             return res.status(404).json({message: "No questions found"});
         }
