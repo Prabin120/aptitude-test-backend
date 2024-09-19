@@ -10,6 +10,8 @@ import rateLimit from 'express-rate-limit';   //we can use slow down rate limitt
 const app = express();
 const PORT = 8000;
 
+app.set('trust proxy', 1); // Trust the first proxy
+
 //Connecting to mongoDB
 connectMongoDb()
 
