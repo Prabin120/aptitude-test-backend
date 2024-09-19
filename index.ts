@@ -6,6 +6,7 @@ import authRouter from './routes/authRoute';
 import profileRouter from './routes/profileRoute';
 import testRouter from './routes/testRoute';
 import rateLimit from 'express-rate-limit';   //we can use slow down rate limitter as well
+import slowDown from 'express-slow-down';
 
 const app = express();
 const PORT = process.env.PORT
@@ -22,10 +23,18 @@ app.use(cors({
     credentials: true,
 }))
 app.use(rateLimit({
-    windowMs: 1000 * 5, //5 sec
+    windowMs: 1000 * 1, //5 sec
     max: 3,
 }))
 
+const limiter = slowDown({
+    windowMs: 1 * 60 * 1000, // 15 minutes
+    delayAfter: 1, // allow 10 requests without slowing them down
+    delayMs: (hits) => hits * 200, // add 200ms delay to every request after the 10th
+    maxDelayMs: 1000, // max global delay of 5 seconds
+});
+
+app.use(limiter)
 app.use(express.json())
 app.use(cookieParser());
 
