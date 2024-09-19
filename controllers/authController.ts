@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user";
 import { Request, Response } from "express";
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import ICustomRequest from "../utils/customRequest";
 import sendMail from "../utils/mailService";
 
