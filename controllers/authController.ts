@@ -8,7 +8,7 @@ import sendMail from "../utils/mailService";
 const JWT_ACCESS_SECRET_KEY = process.env.JWT_ACCESS_SECRET_KEY as string;
 const JWT_ACCESS_EXPIRY_TIME = process.env.JWT_ACCESS_EXPIRY_TIME as string;
 const JWT_PASSWORD_RESET_TIME = process.env.JWT_PASSWORD_RESET_TIME as string;
-const DOMAIN_URL = process.env.DOMAIN_URL as string;
+const CLIENT_DOMAIN_URL = process.env.CLIENT_DOMAIN_URL as string;
 
 interface ISignUpBody{
     email: string;
@@ -139,7 +139,7 @@ const forgotPassword = async(req: ICustomRequest,res: Response)=>{
         const token = jwt.sign({ userId: user._id }, JWT_ACCESS_SECRET_KEY, {
             expiresIn: JWT_PASSWORD_RESET_TIME,
         });
-        const resetLink = `${DOMAIN_URL}/reset-password/?token=${token}`;
+        const resetLink = `${CLIENT_DOMAIN_URL}/reset-password/?token=${token}`;
         await user.save();
         const response = await sendMail(user.name, user.email, "forgotPassword", resetLink);
         if(response){
