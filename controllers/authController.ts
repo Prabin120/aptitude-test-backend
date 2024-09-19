@@ -50,7 +50,9 @@ const signUp = async (req: ICustomRequest, res: Response) => {
         });
         return res
         .cookie('access_token', token, {
-            httpOnly: true
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none'
         })
         .status(201).json({
             message: "User registered successfully",
@@ -80,7 +82,9 @@ const login = async (req: ICustomRequest, res: Response) => {
         });
         return res
         .cookie('access_token', token, {
-            httpOnly: true
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none'
         })
         .status(200).json({
             message: "Login successful",
@@ -113,7 +117,9 @@ const changePassword = async(req:ICustomRequest, res:Response)=>{
         });
         return res
         .cookie('access_token', token, {
-            httpOnly: true
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none'
         })
         .status(200).json({message: "Password changed successfully"});
     } catch (error) {
@@ -175,7 +181,9 @@ const resetPassword = async(req: ICustomRequest,res: Response)=>{
     });
     return res
         .cookie('access_token', token, {
-            httpOnly: true
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none'
         })
         .status(201).json({
             message: "Password reset successfully",
