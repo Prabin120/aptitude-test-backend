@@ -8,7 +8,7 @@ import testRouter from './routes/testRoute';
 import rateLimit from 'express-rate-limit';   //we can use slow down rate limitter as well
 
 const app = express();
-const PORT = 8000;
+const PORT = process.env.PORT
 
 app.set('trust proxy', 1); // Trust the first proxy
 
@@ -17,7 +17,7 @@ connectMongoDb()
 
 //Middlewares
 app.use(cors({
-    origin: ['localhost:3000','http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: [process.env.CLIENT_DOMAIN_URL??"http://localhost:3000"],
     methods: ["GET","POST","DELETE","PUT"],
     credentials: true,
 }))
