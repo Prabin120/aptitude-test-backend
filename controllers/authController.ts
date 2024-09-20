@@ -3,7 +3,7 @@ import User from "../models/user";
 import { Request, Response } from "express";
 import bcrypt from 'bcryptjs';
 import ICustomRequest from "../utils/customRequest";
-import sendMail from "../utils/mailService";
+import { sendMailResetPasswordMail } from "../utils/mailService";
 
 const JWT_ACCESS_SECRET_KEY = process.env.JWT_ACCESS_SECRET_KEY as string;
 const JWT_ACCESS_EXPIRY_TIME = process.env.JWT_ACCESS_EXPIRY_TIME as string;
@@ -147,7 +147,7 @@ const forgotPassword = async(req: ICustomRequest,res: Response)=>{
         });
         const resetLink = `${CLIENT_DOMAIN_URL}/reset-password/?token=${token}`;
         await user.save();
-        const response = await sendMail(user.name, user.email, "forgotPassword", resetLink);
+        const response = await sendMailResetPasswordMail(user.name, user.email, resetLink);
         if(response){
             return res.status(200).json({message: "Password reset link sent to your email"});
         }
