@@ -45,7 +45,7 @@ const signUp = async (req: ICustomRequest, res: Response) => {
             institute,
         });
         await newUser.save();
-        const token = jwt.sign({ userId: newUser._id }, JWT_ACCESS_SECRET_KEY, {
+        const token = jwt.sign({ userId: newUser._id, role: newUser.role }, JWT_ACCESS_SECRET_KEY, {
             expiresIn: JWT_ACCESS_EXPIRY_TIME,
         });
         return res
@@ -77,7 +77,7 @@ const login = async (req: ICustomRequest, res: Response) => {
         if (!isPasswordValid) {
             return res.status(400).json({ message: "Invalid email or password" });
         }
-        const token = jwt.sign({ userId: user._id }, JWT_ACCESS_SECRET_KEY, {
+        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_ACCESS_SECRET_KEY, {
             expiresIn: JWT_ACCESS_EXPIRY_TIME,
         });
         return res
@@ -112,7 +112,7 @@ const changePassword = async(req:ICustomRequest, res:Response)=>{
         }
         user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
-        const token = jwt.sign({ userId: user._id }, JWT_ACCESS_SECRET_KEY, {
+        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_ACCESS_SECRET_KEY, {
             expiresIn: JWT_ACCESS_EXPIRY_TIME,
         });
         return res
@@ -142,7 +142,7 @@ const forgotPassword = async(req: ICustomRequest,res: Response)=>{
         if(!user){
             return res.status(403).json({message: "Email address not found"});
         }
-        const token = jwt.sign({ userId: user._id }, JWT_ACCESS_SECRET_KEY, {
+        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_ACCESS_SECRET_KEY, {
             expiresIn: JWT_PASSWORD_RESET_TIME,
         });
         const resetLink = `${CLIENT_DOMAIN_URL}/reset-password/?token=${token}`;
@@ -176,7 +176,7 @@ const resetPassword = async(req: ICustomRequest,res: Response)=>{
     }
     user.password = await bcrypt.hash(password, 10);
     await user.save();
-    const token = jwt.sign({ userId: user._id }, JWT_ACCESS_SECRET_KEY, {
+    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_ACCESS_SECRET_KEY, {
         expiresIn: JWT_ACCESS_EXPIRY_TIME,
     });
     return res
