@@ -8,6 +8,7 @@ import testRouter from './routes/testRoute';
 import feedbackRouter from './routes/feedbackRoute';
 import rateLimit from 'express-rate-limit';   //we can use slow down rate limitter as well
 import slowDown from 'express-slow-down';
+// import paymentRouter from './routes/paymentRoute';
 
 const app = express();
 const PORT = process.env.PORT
@@ -19,7 +20,7 @@ connectMongoDb()
 
 //Middlewares
 app.use(cors({
-    origin: [process.env.CLIENT_DOMAIN_URL??"http://localhost:3000"],
+    origin: [process.env.CLIENT_DOMAIN_URL as string, "http://localhost:3000"],
     methods: ["GET","POST","DELETE","PUT"],
     credentials: true,
 }))
@@ -48,6 +49,7 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/user', profileRouter);
 app.use('/api/v1/aptitude', testRouter);
 app.use('/api/v1/feedback', feedbackRouter);
+// app.use('/api/v1/payment', paymentRouter);
 
 app.listen(PORT, ()=>{
     console.log(`Server started at port ${PORT}`);
