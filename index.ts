@@ -6,6 +6,7 @@ import authRouter from './routes/authRoute';
 import profileRouter from './routes/profileRoute';
 import testRouter from './routes/testRoute';
 import feedbackRouter from './routes/feedbackRoute';
+import aptitudeRouter from './routes/aptitudeRoute';
 import rateLimit from 'express-rate-limit';   //we can use slow down rate limitter as well
 import slowDown from 'express-slow-down';
 // import paymentRouter from './routes/paymentRoute';
@@ -47,10 +48,11 @@ app.get('/',(req,res)=>{
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/user', profileRouter);
-app.use('/api/v1/aptitude', testRouter);
+app.use('/api/v1/test', testRouter);
 app.use('/api/v1/feedback', feedbackRouter);
+app.use('/api/v1/aptitude', aptitudeRouter);
 // app.use('/api/v1/payment', paymentRouter);
 
 app.listen(PORT, ()=>{
-    console.log(`Server started at port ${PORT}`);
+    console.log(`Server has started at port ${PORT}`);
 })

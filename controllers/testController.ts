@@ -112,11 +112,11 @@ const upcomingTest = async(req:ICustomRequest, res:Response)=>{
 const registerTest = async(req:ICustomRequest, res:Response)=>{
     try {
         const userId = req.userId;
+        const {dateTime} = req.body;
         const test = await Test.findOne().sort({createdAt:-1});
         if(!test){
             return res.status(404).json({message: "No test found"});
         }
-        const {dateTime} = req.body;
         const mergedDate = new Date(dateTime);
         if(mergedDate.getTime() < Date.now()){
             return res.status(400).json({message: "Invalid booking date, Please choose a future date"});

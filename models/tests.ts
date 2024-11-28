@@ -6,15 +6,19 @@ interface ITest{
     title: string;
     description: string;
     questions: mongoose.Types.ObjectId[];
+    codingQuestion?: string[];
+    type: "exam" | "practice"
     testTime?: Date;
-    duration: number;
+    duration?: number;
 };
 
 const testSchema = new mongoose.Schema<ITest>({
     _id: {type: String, default: uuidv4},
     title: {type: String, index: true, unique: true, required: true},
     description: {type: String, required: true},
-    questions: [{type: Number, required: true}],
+    questions: [{type: Number}],
+    codingQuestion: [{type: String}],
+    type: {type: String, enum: ['exam', 'practice'], default: 'practice'},
     testTime: {type: Date},
     duration: {type: Number} //in minutes
 },{
