@@ -21,7 +21,7 @@ connectMongoDb()
 
 //Middlewares
 app.use(cors({
-    origin: [process.env.CLIENT_DOMAIN_URL as string, "http://localhost:3000"],
+    origin: (process.env.CLIENT_DOMAIN_URL as string) ?? "http://localhost:3000",
     methods: ["GET","POST","DELETE","PUT"],
     credentials: true,
 }))
