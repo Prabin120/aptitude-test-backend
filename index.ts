@@ -25,10 +25,10 @@ app.use(cors({
     methods: ["GET","POST","DELETE","PUT"],
     credentials: true,
 }))
-app.use(rateLimit({
-    windowMs: 1000 * 1, //5 sec
-    max: 3,
-}))
+// app.use(rateLimit({
+//     windowMs: 1000 * 1, //5 sec
+//     max: 3,
+// }))
 
 const limiter = slowDown({
     windowMs: 1 * 60 * 1000, // 15 minutes
