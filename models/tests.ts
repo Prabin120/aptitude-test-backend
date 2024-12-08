@@ -5,7 +5,7 @@ interface ITest{
     readonly _id: string;
     title: string;
     description: string;
-    questions: mongoose.Types.ObjectId[];
+    aptiQuestions: mongoose.Types.ObjectId[];
     codingQuestion?: string[];
     type: "exam" | "practice"
     testTime?: Date;
@@ -16,7 +16,7 @@ const testSchema = new mongoose.Schema<ITest>({
     _id: {type: String, default: uuidv4},
     title: {type: String, index: true, unique: true, required: true},
     description: {type: String, required: true},
-    questions: [{type: Number}],
+    aptiQuestions: [{type: Number}],
     codingQuestion: [{type: String}],
     type: {type: String, enum: ['exam', 'practice'], default: 'practice'},
     testTime: {type: Date},
