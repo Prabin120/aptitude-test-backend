@@ -1,17 +1,14 @@
 import express from 'express';
-// import { getTest, registerTest, scoreCard, setQuestions, setTest, submitTest, upcomingTest } from '../controllers/testController';
 import { adminAuthentication, authenticate } from '../middlewares/authMiddleware';
-// import {validateTestQuestion} from '../controllers/testController'
+import {createTest, examTestReport, getSingleTest, getTests, submitTest, validateTestQuestion} from '../controllers/testController'
 
 const router = express.Router();
 
-// router.get('/', authenticate, getTest);
-// router.post('/', authenticate, submitTest);
-// router.get('/upcoming-test', authenticate, upcomingTest)
-// router.post('/test-registration', authenticate, registerTest)
-// router.post('/set-questions', adminAuthentication, setQuestions)
-// router.post('/set-test', adminAuthentication, setTest)
-// router.get('/score-card', authenticate, scoreCard)
-// router.post('/validate-questions', adminAuthentication, validateTestQuestion)
+router.get('/', getTests);
+router.post('/', adminAuthentication, createTest);
+router.get('/:slug', authenticate, getSingleTest);
+router.get('/exam-report/:slug', examTestReport);
+router.post('/submit-test', authenticate, submitTest)
+router.post('/validate-questions', validateTestQuestion)
 
 export default router

@@ -14,6 +14,7 @@ interface IQuestion extends Document {
     topics: string[];
     categories: string[];
     companies: string[];
+    questionKind?: string
 }
 
 // Interface for the QuestionIdCounter model

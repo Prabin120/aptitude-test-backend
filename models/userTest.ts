@@ -5,7 +5,8 @@ interface IUserTest{
     readonly _id: string;
     user: string
     test: string
-    answers?: {[key: string]: string | [string]};
+    aptitudeAnswers?: {[key: string]: string | [string]};
+    codingAnswers?: object;
     marksAchieved?: number;
     paid: boolean;
     bookedTime: Date;
@@ -16,14 +17,13 @@ interface IUserTest{
 
 const userTestSchema = new mongoose.Schema<IUserTest>({
     _id: {type: String, default: uuidv4},
-    user: {type: String, required: true},
+    user: {type: String, ref: 'User', required: true},
     test: {type: String, required: true},
-    answers: {type: Object},
+    aptitudeAnswers: [{type: Object}],
+    codingAnswers: [{type: Object}],
     marksAchieved: {type: Number},
     totalMarks: {type: Number},
-    paid: {type: Boolean, default: false},
-    bookedTime: {type: Date, required: true},
-    duration: {type: Number, required: true},
+    // paid: {type: Boolean, default: false},
     attempted: {type: Boolean, default: false}
 },{ timestamps: true })
 

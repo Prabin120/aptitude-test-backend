@@ -82,8 +82,9 @@ const getQuestionByCategoty = async (req: ICustomRequest, res: Response) => {
 
 		const { category } = req.params;
 		const categoryString = category.split("%20").join(" ");
-		const questions = await Question.find({ categories: categoryString })
-			// .select("questionNo title type marks slug")
+		const questions = await Question.find({ categories: categoryString },
+			"questionNo slug title type marks answers options"
+			)
 			.skip(skip)
 			.limit(limit > 30 ? 30 : limit);
 
@@ -111,8 +112,9 @@ const getQuestionByTopic = async (req: ICustomRequest, res: Response) => {
 		const limit = Number(req.query?.limit) || 10;
 		const skip = (page - 1) * limit; // Calculate skip value
 		// const skip = (page - 1) * limit;
-		const questions = await Question.find({ topics: topicString })
-			// .select("questionNo title type marks slug")
+		const questions = await Question.find({ topics: topicString },
+			"questionNo slug title type marks answers options"
+			)
 			.skip(skip)
 			.limit(limit > 30 ? 30 : limit);
 		const totalQuestions = await Question.countDocuments({
@@ -141,9 +143,9 @@ const getQuestionByCompany = async (req: ICustomRequest, res: Response) => {
 				? 10
 				: Number(req.query?.limit) || 10;
 		const skip = (page - 1) * limit;
-		// const skip = (page - 1) * limit;
-		const questions = await Question.find({ companies: companyString })
-			// .select("questionNo title type marks slug")
+		const questions = await Question.find({ companies: companyString },
+			"questionNo slug title type marks answers options"
+			)
 			.skip(skip)
 			.limit(limit > 30 ? 30 : limit);
 		const totalQuestions = await Question.countDocuments({

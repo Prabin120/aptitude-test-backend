@@ -7,13 +7,11 @@ import profileRouter from './routes/profileRoute';
 import testRouter from './routes/testRoute';
 import feedbackRouter from './routes/feedbackRoute';
 import aptitudeRouter from './routes/aptitudeRoute';
-import rateLimit from 'express-rate-limit';   //we can use slow down rate limitter as well
 import slowDown from 'express-slow-down';
-// import paymentRouter from './routes/paymentRoute';
 
 const app = express();
 const PORT = process.env.PORT
-
+process.env.TZ = 'UTC';
 app.set('trust proxy', 1); // Trust the first proxy
 
 //Connecting to mongoDB

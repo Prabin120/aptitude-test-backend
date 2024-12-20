@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
-interface IUser{
+export interface IUser{
     readonly _id: string;
     name: string;
     email: string;
