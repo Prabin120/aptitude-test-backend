@@ -34,14 +34,17 @@ const getQuestion = async (req: ICustomRequest, res: Response) => {
 const getAllQuestion = async (req: ICustomRequest, res: Response) => {
 	try {
 		const page = Number(req.query?.page) || 1;
-		const limit = Number(req.query?.limit) || 10;
+		const limit = Number(process.env.PAGE_LIMIT) || 10;
+		const search = req.query?.search;
 		const skip = (page - 1) * limit; // Calculate skip value
-		const questions = await Question.find({})
+		const filter = search ? { title: { $regex: search, $options: "i" } } : {};
+		const questions = await Question.find(filter)
 			.select("questionNo title type marks slug")
 			.skip(skip) // Use skip for pagination
-			.limit(limit > 30 ? 30 : limit); // Limit the number of results
+			.limit(limit) // Limit the number of results
+			.sort({ questionNo: 1 });
 
-		const totalQuestions = await Question.countDocuments(); // Get total questions count
+		const totalQuestions = await Question.countDocuments(filter); // Get total questions count
 		const totalPages = Math.ceil(totalQuestions / limit); // Calculate total pages
 
 		if (!questions.length) {
