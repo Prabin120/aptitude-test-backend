@@ -28,14 +28,14 @@ app.use(cors({
 //     max: 3,
 // }))
 
-const limiter = slowDown({
-    windowMs: 1 * 60 * 1000, // 15 minutes
-    delayAfter: 1, // allow 10 requests without slowing them down
-    delayMs: (hits) => hits * 200, // add 200ms delay to every request after the 10th
-    maxDelayMs: 1000, // max global delay of 5 seconds
-});
+// const limiter = slowDown({
+//     windowMs: 1 * 60 * 1000, // 15 minutes
+//     delayAfter: 1, // allow 10 requests without slowing them down
+//     delayMs: (hits) => hits * 200, // add 200ms delay to every request after the 10th
+//     maxDelayMs: 1000, // max global delay of 5 seconds
+// });
 
-app.use(limiter)
+// app.use(limiter)
 app.use(express.json())
 app.use(cookieParser());
 

@@ -9,11 +9,12 @@ const JWT_ACCESS_SECRET_KEY = process.env.JWT_ACCESS_SECRET_KEY as string;
 
 interface DecodedToken{
     userId: string;
+    role: string;
 }
-const verifyToken = async(token: string) => {
+const verifyToken = (token: string) => {
     try {
         const decodedToken = jwt.verify(token, JWT_ACCESS_SECRET_KEY) as DecodedToken;
-        return decodedToken.userId;
+        return decodedToken;
     } catch (error) {
         return
     }
@@ -27,7 +28,8 @@ const authenticate = async (req: ICustomRequest, res: Response, next: NextFuncti
             // res.clearCookie('access_token', { httpOnly: true});
             return;
         }
-        const userId = await verifyToken(token);
+        const decodedToken = verifyToken(token);
+        const userId = decodedToken?.userId;
         if(!userId){
           res.status(401).json({ message: 'Authentication failed'});
         //   res.clearCookie('access_token', { httpOnly: true});
@@ -51,7 +53,8 @@ const adminAuthentication = async (req: ICustomRequest, res: Response, next: Nex
         return;
     }
     try {
-        const userId = await verifyToken(token);
+        const decodedToken = verifyToken(token);
+        const userId = decodedToken?.userId;
         const user = await User.findById(userId);
         if (!user) {
             res.status(401).json({ message: 'User not found' });
@@ -72,4 +75,4 @@ const adminAuthentication = async (req: ICustomRequest, res: Response, next: Nex
     }
 };
 
-export { authenticate, adminAuthentication };
+export { authenticate, adminAuthentication, verifyToken };
