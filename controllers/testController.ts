@@ -53,7 +53,8 @@ const submitTest = async(req:ICustomRequest, res:Response)=>{
             return res.status(404).json({message: "Test not found"});
         }
         const endTime = test.endDateTime;
-        if(endTime && endTime.getTime() < Date.now()){
+        const extraTimeToSubmit = 1000*60*2;
+        if(endTime && endTime.getTime() + extraTimeToSubmit < Date.now()){
             return res.status(400).json({message: "Submit failed due to late submission"});
         }
         let [correctMarks, totalMarks] = await markCalculations(aptitudeAnswers, testId as string);
