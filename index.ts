@@ -40,8 +40,8 @@ app.use(express.json())
 app.use(cookieParser());
 
 // Routes
-app.get('/',(req,res)=>{
-    res.status(200).send("Working");
+app.get('/health',(req,res)=>{
+    res.status(200).json({message: "Server is up and running"});
 })
 
 app.use('/api/v1/auth', authRouter);
