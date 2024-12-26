@@ -62,7 +62,7 @@ const adminAuthentication = async (req: ICustomRequest, res: Response, next: Nex
             return;
         }
         if (user.role !== "admin") {
-            res.status(401).json({ message: "Only admin can use the calls" });
+            res.status(400).json({ message: "Only admin can use the calls" });
             return;
         }
         req.userId = userId;
