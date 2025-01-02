@@ -9,6 +9,7 @@ export interface IUser{
     institute?: string;
     mobile: string;
     role: 'user' | 'admin';
+    image: string;
 };
 
 const userSchema = new mongoose.Schema<IUser>({
@@ -32,8 +33,6 @@ const userSchema = new mongoose.Schema<IUser>({
     },
     mobile: {
         type: String,
-        required: true,
-        unique: true
     },
     institute: {
         type: String
@@ -42,6 +41,9 @@ const userSchema = new mongoose.Schema<IUser>({
         type: String,
         enum:['user', 'admin'],
         default: 'user'
+    },
+    image: {
+        type: String
     }
 }, {timestamps: true});
 

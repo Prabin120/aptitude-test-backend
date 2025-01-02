@@ -5,11 +5,13 @@ import bcrypt from "bcryptjs";
 import ICustomRequest from "../utils/customRequest";
 import { sendMailResetPasswordMail } from "../utils/mailService";
 import { verifyToken } from "../middlewares/authMiddleware";
-import { get } from "http";
+import { v4 as uuidv4 } from 'uuid';
 
 const JWT_ACCESS_SECRET_KEY = process.env.JWT_ACCESS_SECRET_KEY as string;
-const JWT_ACCESS_EXPIRY_TIME = process.env.JWT_ACCESS_EXPIRY_TIME?? "24h" as string;
-const JWT_REFRESH_EXPIRY_TIME = process.env.JWT_REFRESH_EXPIRY_TIME?? "7d" as string;
+const JWT_ACCESS_EXPIRY_TIME =
+    process.env.JWT_ACCESS_EXPIRY_TIME ?? ("24h" as string);
+const JWT_REFRESH_EXPIRY_TIME =
+    process.env.JWT_REFRESH_EXPIRY_TIME ?? ("7d" as string);
 const JWT_PASSWORD_RESET_TIME = process.env.JWT_PASSWORD_RESET_TIME as string;
 const CLIENT_DOMAIN_URL = process.env.CLIENT_DOMAIN_URL as string;
 
@@ -30,16 +32,17 @@ interface DecodedToken {
 }
 
 const getToken = (userId: string, role: string, refresh = false) => {
-    return jwt.sign(
-        { userId, role},
-        JWT_ACCESS_SECRET_KEY,
-        {
-            expiresIn: refresh ? JWT_REFRESH_EXPIRY_TIME : JWT_ACCESS_EXPIRY_TIME,
-        }
-    )
-} 
+    return jwt.sign({ userId, role }, JWT_ACCESS_SECRET_KEY, {
+        expiresIn: refresh ? JWT_REFRESH_EXPIRY_TIME : JWT_ACCESS_EXPIRY_TIME,
+    });
+};
 
-const generateToken = (res: Response, user: IUser, status: number, message: string) => {
+const generateToken = (
+    res: Response,
+    user: IUser,
+    status: number,
+    message: string
+) => {
     const access_token = getToken(user._id, user.role);
     const refresh_token = getToken(user._id, user.role, true);
     return res
@@ -134,7 +137,7 @@ const changePassword = async (req: ICustomRequest, res: Response) => {
 
 const logout = async (req: ICustomRequest, res: Response) => {
     res.clearCookie("access_token", { httpOnly: true });
-    res.clearCookie('refresh_token', { httpOnly: true});
+    res.clearCookie("refresh_token", { httpOnly: true });
     return res.status(200).json({ message: "Logout successful" });
 };
 
@@ -224,7 +227,7 @@ const validToken = async (req: Request, res: Response) => {
     return res.status(200);
 };
 
-const refreshToken = async(req: Request, res: Response) => {
+const refreshToken = async (req: Request, res: Response) => {
     try {
         const token = req.cookies.refresh_token;
         if (!token) {
@@ -250,12 +253,35 @@ const refreshToken = async(req: Request, res: Response) => {
                 sameSite: "none",
             })
             .status(200)
-            .json({message: "Token refreshed successfully"});
-        return res
+            .json({ message: "Token refreshed successfully" });
+        return res;
     } catch (error) {
         return res.status(401).json({ message: (error as Error).message });
     }
 };
+
+const googleLogin = async (googleUser: {name: string, email: string, picture: string, mobile: string}) => {
+    try {
+        const user = await User.findOne({ email: googleUser.email });
+        if (user) return {access_token: getToken(user._id, user.role), refresh_token: getToken(user._id, user.role, true)};
+        const hashedPassword = await bcrypt.hash(uuidv4.toString(), 10);
+        const newUser = new User({
+            email: googleUser.email,
+            password: hashedPassword,
+            name: googleUser.name,
+            mobile: googleUser.mobile??"",
+            institute: "Not given",
+            image: googleUser.picture,
+        });
+        await newUser.save();
+        return {access_token: getToken(newUser._id, newUser.role), refresh_token: getToken(newUser._id, newUser.role, true)};
+    } catch (error) {
+        console.error(error);
+        return {access: "", refresh: ""};
+    }
+};
+
+const googleCallback = async (req: Request, res: Response) => { };
 
 export {
     signUp,
@@ -266,4 +292,6 @@ export {
     forgotPassword,
     resetPassword,
     refreshToken,
+    googleLogin,
+    googleCallback,
 };

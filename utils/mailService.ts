@@ -58,7 +58,7 @@ const sendMailGotFeedback = async (
         return false;
     }
     try {
-        mailOptions.subject = "Feedback AptiTest";
+        mailOptions.subject = "Feedback AptiCode";
         mailOptions.html = `
         Mail from ${receipantMailId}
         Name: ${receipantName}

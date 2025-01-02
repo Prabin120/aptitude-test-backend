@@ -43,10 +43,10 @@ const forgotPasswordBody = (name: string, resetLink: string) => `
 <body>
   <div class="container">
     <h2>Hi ${name},</h2>
-    <p>You recently requested to reset the password for your AptiTest account. Click the button below to proceed:</p>
+    <p>You recently requested to reset the password for your AptiCode account. Click the button below to proceed:</p>
     <a href="${resetLink}" class="button">Reset Password</a>
     <p>If you did not request a password reset, please ignore this email or reply to let us know. This password reset link is only valid for the next <strong>30 minutes</strong>.</p>
-    <p>Thanks,<br>The AptiTest Team</p>
+    <p>Thanks,<br>The AptiCode Team</p>
     <div class="footer">
       <p>If you're having trouble clicking the "Reset Password" button, copy and paste the URL below into your web browser:</p>
       <p>${resetLink}</p>
@@ -56,6 +56,6 @@ const forgotPasswordBody = (name: string, resetLink: string) => `
 </html>
 `;
 
-const forgotPasswordSubject = `Password Reset for AptiTest`
+const forgotPasswordSubject = `Password Reset for AptiCode`
 
 export {forgotPasswordBody, forgotPasswordSubject};

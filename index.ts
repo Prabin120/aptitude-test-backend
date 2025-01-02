@@ -19,14 +19,10 @@ connectMongoDb()
 
 //Middlewares
 app.use(cors({
-    origin: (process.env.CLIENT_DOMAIN_URL as string) ?? "http://localhost:3000",
+    origin: [process.env.CLIENT_DOMAIN_URL as string, process.env.CLIENT_DOMAIN_URL_2 as string, process.env.CLIENT_DOMAIN_URL_3 as string??""],
     methods: ["GET","POST","DELETE","PUT"],
     credentials: true,
 }))
-// app.use(rateLimit({
-//     windowMs: 1000 * 1, //5 sec
-//     max: 3,
-// }))
 
 const limiter = slowDown({
     windowMs: 1 * 60 * 1000, // 15 minutes
@@ -40,17 +36,17 @@ app.use(express.json())
 app.use(cookieParser());
 
 // Routes
-app.get('/health',(req,res)=>{
+app.get('/p/health',(req,res)=>{
     res.status(200).json({message: "Server is up and running"});
 })
 
-app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/user', profileRouter);
-app.use('/api/v1/test', testRouter);
-app.use('/api/v1/feedback', feedbackRouter);
-app.use('/api/v1/aptitude', aptitudeRouter);
+app.use('/p/api/v1/auth', authRouter);
+app.use('/p/api/v1/user', profileRouter);
+app.use('/p/api/v1/test', testRouter);
+app.use('/p/api/v1/feedback', feedbackRouter);
+app.use('/p/api/v1/aptitude', aptitudeRouter);
 // app.use('/api/v1/payment', paymentRouter);
 
 app.listen(PORT, ()=>{
-    console.log(`Server has started at port ${PORT}`);
+    console.log(`Server started at port ${PORT}`);
 })
