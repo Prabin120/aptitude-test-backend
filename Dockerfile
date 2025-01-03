@@ -21,7 +21,10 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Production runtime image
-FROM node:18-alpine AS production
+FROM node:18-alpine
+
+# Install Redis in the final image
+RUN apk add --no-cache redis
 
 # Set the working directory
 WORKDIR /app
@@ -40,6 +43,6 @@ COPY --from=builder /app/dist ./dist
 # Expose the application port (if applicable)
 EXPOSE 8000
 
-# Command to run the application in production
-# CMD ["node", "dist/index.js"]
-CMD ["npm", "run", "dev"]
+# Start Redis and the Node.js application
+CMD ["sh", "-c", "redis-server --daemonize yes && npm run start"]
+# CMD ["sh", "-c", "redis-server --daemonize yes && npm run dev"]

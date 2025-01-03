@@ -4,8 +4,9 @@ import UserTest from "../models/userTest";
 import Test from "../models/tests";
 import Question from "../models/questions";
 import axios from "axios";
-import { gettingQuestionsForTest, goServer } from "../consts";
+import { gettingQuestionsForTest, goServer, REDIS_EXPIRY } from "../consts";
 import { IUser } from "../models/user";
+import client from "../utils/redis";
 
 const markCalculations = async (answers: any, testId: string) => {
     let totalMarks = 0;
@@ -107,6 +108,7 @@ const createTest = async (req: ICustomRequest, res: Response) => {
 };
 
 const getTests = async (req: ICustomRequest, res: Response) => {
+    const key = req.originalUrl;
     try {
         const currentTime = Date.now();
         const ongoingTests = await Test.find({
@@ -125,6 +127,7 @@ const getTests = async (req: ICustomRequest, res: Response) => {
         )
             .sort({ createdAt: -1 })
             .limit(5);
+        await client.set(key, JSON.stringify({ ongoingTests, upcomingTests, pastTests }), {EX: REDIS_EXPIRY});
         return res.status(200).json({ upcomingTests, pastTests, ongoingTests });
     } catch (error) {
         console.log(error);
@@ -133,6 +136,7 @@ const getTests = async (req: ICustomRequest, res: Response) => {
 };
 
 const getSingleTest = async (req: ICustomRequest, res: Response) => {
+    const key = req.originalUrl;
     try {
         const { slug } = req.params;
         const { onlyApti } = req.query;
@@ -160,6 +164,7 @@ const getSingleTest = async (req: ICustomRequest, res: Response) => {
             .catch((error) => {
                 console.log(error);
             });
+        await client.set(key, JSON.stringify({ test, codingQuestions, aptiQuestions }), {EX: REDIS_EXPIRY});
         return res.status(200).json({ test, codingQuestions, aptiQuestions });
     } catch (error) {
         console.log(error);
@@ -168,6 +173,7 @@ const getSingleTest = async (req: ICustomRequest, res: Response) => {
 };
 
 const examTestReport = async (req: ICustomRequest, res: Response) => {
+    const key = req.originalUrl;
     const { slug } = req.params;    
     try {
         const test = await Test.findOne({ slug });
@@ -183,12 +189,12 @@ const examTestReport = async (req: ICustomRequest, res: Response) => {
             select: "name", // Fetch only the 'name' field from User
         })
         .sort({ marksAchieved: -1 });
-        return res.status(200).json({
-            data: userTest.map(item => ({
-                marksAchieved: item.marksAchieved,
-                name: item.user.name, // Access the populated name
-            }))
-        });
+        const data = userTest.map(item => ({
+            marksAchieved: item.marksAchieved,
+            name: item.user.name, // Access the populated name
+        }))
+        await client.set(key, JSON.stringify({data}), {EX: REDIS_EXPIRY});
+        return res.status(200).json({data});
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: "Server error" });

@@ -1,6 +1,8 @@
 import { AptiQuestionCategories, AptiQuestionCompanies, AptiQuestionTopics } from "../models/questionTags";
 import ICustomRequest from "../utils/customRequest";
 import { Response } from "express";
+import client from "../utils/redis";
+import { REDIS_EXPIRY } from "../consts";
 
 const addCategory = async (req: ICustomRequest, res: Response) => {
     try {
@@ -53,10 +55,12 @@ const addQuestionTag = async (req: ICustomRequest, res: Response) => {
 };
 
 const getQuestionTags = async (req: ICustomRequest, res: Response) => {
+    const key = req.originalUrl;
     try {
         const categories = await AptiQuestionCategories.find({}).select("-createdAt -updatedAt -__v");
         const topics = await AptiQuestionTopics.find({}).select("-createdAt -updatedAt -__v");
         const companies = await AptiQuestionCompanies.find({}).select("-createdAt -updatedAt -__v");
+        await client.set(key, JSON.stringify({ categories, topics, companies }), {EX: REDIS_EXPIRY});
         return res.status(200).json({ categories, topics, companies });
     } catch (error) {
         return res.status(500).json({ message: "Server error" });

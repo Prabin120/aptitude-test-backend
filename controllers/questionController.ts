@@ -1,8 +1,11 @@
 import { Response } from "express";
 import ICustomRequest from "../utils/customRequest";
 import Question from "../models/questions";
+import { REDIS_EXPIRY } from "../consts";
+import client from "../utils/redis";
 
 const getQuestion = async (req: ICustomRequest, res: Response) => {
+	const key = req.originalUrl;
 	const { slug } = req.params;
 	if (!slug) {
 		return res.status(400).json({ message: "Slug is required" });
@@ -22,6 +25,7 @@ const getQuestion = async (req: ICustomRequest, res: Response) => {
 		}).select("slug");
 		const nextQuestionSlug = nextQuestion ? nextQuestion.slug : null;
 		const prevQuestionSlug = prevQuestion ? prevQuestion.slug : null;
+		await client.set(key, JSON.stringify({ question, nextQuestionSlug, prevQuestionSlug }), {EX: REDIS_EXPIRY});
 		return res
 			.status(200)
 			.json({ question, nextQuestionSlug, prevQuestionSlug });
@@ -33,6 +37,7 @@ const getQuestion = async (req: ICustomRequest, res: Response) => {
 
 const getAllQuestion = async (req: ICustomRequest, res: Response) => {
 	try {
+		const key = req.originalUrl;
 		const page = Number(req.query?.page) || 1;
 		const limit = Number(process.env.PAGE_LIMIT) || 10;
 		const search = req.query?.search;
@@ -52,6 +57,7 @@ const getAllQuestion = async (req: ICustomRequest, res: Response) => {
 				.status(404)
 				.json({ data: [], totalPages, message: "No questions found" });
 		}
+		await client.set(key, JSON.stringify({ data: questions, totalPages }), {EX: REDIS_EXPIRY});
 		return res.status(200).json({ data: questions, totalPages });
 	} catch (error) {
 		console.error("Error fetching paginated questions:", error);
@@ -60,6 +66,7 @@ const getAllQuestion = async (req: ICustomRequest, res: Response) => {
 };
 
 const getQuestionById = async (req: ICustomRequest, res: Response) => {
+	const key = req.originalUrl;
 	const { id } = req.query;
 	if (!id) {
 		return res.status(400).json({ message: "Id is required" });
@@ -71,6 +78,7 @@ const getQuestionById = async (req: ICustomRequest, res: Response) => {
 		if (!question) {
 			return res.status(404).json({ message: "Question not found" });
 		}
+		await client.set(key, JSON.stringify(question), {EX: REDIS_EXPIRY});
 		return res.status(200).json(question);
 	} catch (error) {
 		return res.status(500).json({ message: error });
@@ -79,6 +87,7 @@ const getQuestionById = async (req: ICustomRequest, res: Response) => {
 
 const getQuestionByCategoty = async (req: ICustomRequest, res: Response) => {
 	try {
+		const key = req.originalUrl;
 		const page = Number(req.query?.page) || 1;
 		const limit = Number(req.query?.limit) || 10;
 		const skip = (page - 1) * limit; // Calculate skip value
@@ -100,6 +109,7 @@ const getQuestionByCategoty = async (req: ICustomRequest, res: Response) => {
 				.status(404)
 				.json({ data: [], totalPages, message: "No questions found" });
 		}
+		await client.set(key, JSON.stringify({ data: questions, totalPages }), {EX: REDIS_EXPIRY});
 		return res.status(200).json({ data: questions, totalPages });
 	} catch (error) {
 		console.error("Error fetching paginated questions by category:", error);
@@ -109,6 +119,7 @@ const getQuestionByCategoty = async (req: ICustomRequest, res: Response) => {
 
 const getQuestionByTopic = async (req: ICustomRequest, res: Response) => {
 	try {
+		const key = req.originalUrl;
 		const { topic } = req.params;
 		const topicString = topic.split("%20").join(" ");
 		const page = Number(req.query?.page) || 1;
@@ -129,6 +140,7 @@ const getQuestionByTopic = async (req: ICustomRequest, res: Response) => {
 				.status(404)
 				.json({ data: [], totalPages, message: "No questions found" });
 		}
+		await client.set(key, JSON.stringify({ data: questions, totalPages }), {EX: REDIS_EXPIRY});
 		return res.status(200).json({ data: questions, totalPages });
 	} catch (error) {
 		console.error("Error fetching paginated questions by category:", error);
@@ -137,6 +149,7 @@ const getQuestionByTopic = async (req: ICustomRequest, res: Response) => {
 };
 
 const getQuestionByCompany = async (req: ICustomRequest, res: Response) => {
+	const key = req.originalUrl;
 	const { company } = req.params;
 	const companyString = company.split("%20").join(" ");
 	try {
@@ -160,6 +173,7 @@ const getQuestionByCompany = async (req: ICustomRequest, res: Response) => {
 				.status(404)
 				.json({ data: [], totalPages, message: "No questions found" });
 		}
+		await client.set(key, JSON.stringify({ data:questions, totalPages }), {EX: REDIS_EXPIRY});
 		return res.status(200).json({ data: questions, totalPages });
 	} catch (error) {
 		console.error("Error fetching paginated questions by category:", error);
