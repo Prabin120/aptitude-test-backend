@@ -10,6 +10,7 @@ const JWT_ACCESS_SECRET_KEY = process.env.JWT_ACCESS_SECRET_KEY as string;
 interface DecodedToken{
     userId: string;
     role: string;
+    name: string;
 }
 const verifyToken = (token: string) => {
     try {

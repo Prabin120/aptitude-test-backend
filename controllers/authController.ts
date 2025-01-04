@@ -31,8 +31,8 @@ interface DecodedToken {
     userId: string;
 }
 
-const getToken = (userId: string, role: string, refresh = false) => {
-    return jwt.sign({ userId, role }, JWT_ACCESS_SECRET_KEY, {
+const getToken = (userId: string, name: string, role: string, refresh = false) => {
+    return jwt.sign({ userId, name, role }, JWT_ACCESS_SECRET_KEY, {
         expiresIn: refresh ? JWT_REFRESH_EXPIRY_TIME : JWT_ACCESS_EXPIRY_TIME,
     });
 };
@@ -43,8 +43,8 @@ const generateToken = (
     status: number,
     message: string
 ) => {
-    const access_token = getToken(user._id, user.role);
-    const refresh_token = getToken(user._id, user.role, true);
+    const access_token = getToken(user._id, user.name, user.role);
+    const refresh_token = getToken(user._id, user.name, user.role, true);
     return res
         .cookie("access_token", access_token, {
             httpOnly: true,
@@ -236,11 +236,12 @@ const refreshToken = async (req: Request, res: Response) => {
         const decodedToken = verifyToken(token);
         const userId = decodedToken?.userId;
         const role = decodedToken?.role;
+        const name = decodedToken?.name ?? "";
         if (!userId || !role) {
             return res.status(401).json({ message: "Authentication failed" });
         }
-        const access_token = getToken(userId, role);
-        const refresh_token = getToken(userId, role, true);
+        const access_token = getToken(userId, name, role);
+        const refresh_token = getToken(userId, name, role, true);
         res
             .cookie("access_token", access_token, {
                 httpOnly: true,
@@ -263,7 +264,7 @@ const refreshToken = async (req: Request, res: Response) => {
 const googleLogin = async (googleUser: {name: string, email: string, picture: string, mobile: string}) => {
     try {
         const user = await User.findOne({ email: googleUser.email });
-        if (user) return {access_token: getToken(user._id, user.role), refresh_token: getToken(user._id, user.role, true)};
+        if (user) return {access_token: getToken(user._id, user.name, user.role), refresh_token: getToken(user._id, user.name, user.role, true)};
         const hashedPassword = await bcrypt.hash(uuidv4.toString(), 10);
         const newUser = new User({
             email: googleUser.email,
@@ -274,7 +275,7 @@ const googleLogin = async (googleUser: {name: string, email: string, picture: st
             image: googleUser.picture,
         });
         await newUser.save();
-        return {access_token: getToken(newUser._id, newUser.role), refresh_token: getToken(newUser._id, newUser.role, true)};
+        return {access_token: getToken(newUser._id, newUser.name, newUser.role), refresh_token: getToken(newUser._id, newUser.name, newUser.role, true)};
     } catch (error) {
         console.error(error);
         return {access: "", refresh: ""};
