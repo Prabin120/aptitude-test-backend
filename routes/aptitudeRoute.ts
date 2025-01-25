@@ -2,7 +2,7 @@ import express from 'express';
 import { adminAuthentication } from '../middlewares/authMiddleware';
 import { addQuestion, getAllQuestion, getQuestion, getQuestionByCategoty, getQuestionByCompany, getQuestionById, getQuestionByTopic, modifyQuestion } from '../controllers/questionController';
 import { addQuestionTag, getQuestionTags } from '../controllers/questionTagsController';
-import checkCache from '../middlewares/cache';
+import {checkCache} from '../middlewares/cache';
 
 const router = express.Router();
 

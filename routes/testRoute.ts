@@ -1,7 +1,7 @@
 import express from 'express';
 import { adminAuthentication, authenticate } from '../middlewares/authMiddleware';
 import {createTest, examTestReport, getSingleTest, getTests, submitTest, validateTestQuestion} from '../controllers/testController'
-import checkCache from '../middlewares/cache';
+import {checkCache} from '../middlewares/cache';
 
 const router = express.Router();
 

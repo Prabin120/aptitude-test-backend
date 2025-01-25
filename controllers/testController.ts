@@ -7,6 +7,7 @@ import axios from "axios";
 import { gettingQuestionsForTest, goServer, REDIS_EXPIRY } from "../consts";
 import { IUser } from "../models/user";
 import client from "../utils/redis";
+import { clearCache } from "../middlewares/cache";
 
 const markCalculations = async (answers: any, testId: string) => {
     let totalMarks = 0;
@@ -98,6 +99,7 @@ const createTest = async (req: ICustomRequest, res: Response) => {
         const startDateTime = new Date(data.dateTime);
         const endDateTime = startDateTime.getTime() + data.duration * 1000 * 60;
         const response = await Test.create({ ...data, startDateTime, endDateTime });
+        await clearCache("getTests");
         return res
             .status(200)
             .json({ message: "Test set successfully", data: response });
