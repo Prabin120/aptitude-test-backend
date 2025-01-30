@@ -8,6 +8,7 @@ import { gettingQuestionsForTest, goServer, REDIS_EXPIRY } from "../consts";
 import { IUser } from "../models/user";
 import client from "../utils/redis";
 import { clearCache } from "../middlewares/cache";
+import { on } from "events";
 
 const markCalculations = async (answers: any, testId: string) => {
     let totalMarks = 0;
@@ -114,8 +115,8 @@ const getTests = async (req: ICustomRequest, res: Response) => {
     try {
         const currentTime = Date.now();
         const ongoingTests = await Test.find({
-            startDateTime: { $lt: currentTime },
-            endDateTime: { $gt: currentTime },
+            startDateTime: { $gt: currentTime },
+            endDateTime: { $lt: currentTime },
             },
             "slug title startDateTime endDateTime duration description type"
         );
@@ -129,7 +130,6 @@ const getTests = async (req: ICustomRequest, res: Response) => {
         )
             .sort({ createdAt: -1 })
             .limit(5);
-        await client.set(key, JSON.stringify({ ongoingTests, upcomingTests, pastTests }), {EX: REDIS_EXPIRY});
         return res.status(200).json({ upcomingTests, pastTests, ongoingTests });
     } catch (error) {
         console.log(error);

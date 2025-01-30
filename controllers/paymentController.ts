@@ -1,27 +1,25 @@
-import Razorpay from "razorpay";
-import ICustomRequest from "../utils/customRequest";
-import { Response } from "express";
-import dotenv from "dotenv";
-import crypto from "crypto";
+import type { Request, Response } from "express"
+import Razorpay from "razorpay"
+import crypto from "crypto"
+import dotenv from "dotenv"
 
-dotenv.config();
+dotenv.config()
 
 const razorpayInstance = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID as string,
     key_secret: process.env.RAZORPAY_KEY_SECRET as string,
-});
+})
 
-const createOrder = async (req: ICustomRequest, res: Response) => {
-    console.log(req.body);
+export const createOrder = async (req: Request, res: Response) => {
     try {
-        const amount = req.body.amount;
+        const { amount, name, description } = req.body
         const options = {
-            amount,
+            amount: Number(amount),
             currency: "INR",
-            receipt: "razorUser@gmail.com",
-        };
+            receipt: `order_${Date.now()}`,
+        }
 
-        const order = await razorpayInstance.orders.create(options);
+        const order = await razorpayInstance.orders.create(options)
         if (order) {
             return res.status(200).json({
                 success: true,
@@ -29,37 +27,37 @@ const createOrder = async (req: ICustomRequest, res: Response) => {
                 order_id: order.id,
                 amount: amount,
                 key_id: process.env.RAZORPAY_KEY_ID,
-                product_name: req.body.name,
-                description: req.body.description,
-            });
+                product_name: name,
+                description: description,
+            })
         } else {
-            return res
-                .status(400)
-                .json({ success: false, msg: "Something went wrong!" });
+            return res.status(400).json({ success: false, msg: "Something went wrong!" })
         }
     } catch (error) {
-        console.log(error);
-        return res
-            .status(400)
-            .json({ success: false, msg: "Something went wrong!" });
+        console.error(error)
+        return res.status(400).json({ success: false, msg: "Something went wrong!" })
     }
-};
+}
 
-const verifyPayment = async (req: ICustomRequest, res: Response) => {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    console.log(req.body);
-    
-    const expectedSignature = crypto
-        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET as string)
-        .update(body.toString())
-        .digest("hex");
+export const verifyPayment = async (req: Request, res: Response) => {
+    try {
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body
+        const body = razorpay_order_id + "|" + razorpay_payment_id
 
-    if (expectedSignature === razorpay_signature) {
-        res.status(200).json({ status: "ok" });
-    } else {
-        res.status(400).json({ error: "Invalid signature" });
+        const expectedSignature = crypto
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET as string)
+            .update(body.toString())
+            .digest("hex")
+
+        if (expectedSignature === razorpay_signature) {
+            // Payment is successful, you can update your database here
+            res.status(200).json({ status: "ok", message: "Payment verified successfully" })
+        } else {
+            res.status(400).json({ status: "failed", error: "Invalid signature" })
+        }
+    } catch (error) {
+        console.error("Verification error:", error)
+        res.status(500).json({ status: "error", error: "Internal server error" })
     }
-};
+}
 
-export { createOrder, verifyPayment };

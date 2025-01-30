@@ -5,7 +5,7 @@ import {checkCache} from '../middlewares/cache';
 
 const router = express.Router();
 
-router.get('/', checkCache, getTests);
+router.get('/', getTests);
 router.post('/', adminAuthentication, createTest);
 router.get('/:slug', authenticate, checkCache, getSingleTest);
 router.get('/exam-report/:slug', checkCache, examTestReport);

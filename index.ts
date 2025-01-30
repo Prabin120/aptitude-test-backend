@@ -7,6 +7,7 @@ import profileRouter from './routes/profileRoute';
 import testRouter from './routes/testRoute';
 import feedbackRouter from './routes/feedbackRoute';
 import aptitudeRouter from './routes/aptitudeRoute';
+// import paymentRouter from './routes/paymentRoute';
 import slowDown from 'express-slow-down';
 
 const app = express();
@@ -45,7 +46,7 @@ app.use('/p/api/v1/user', profileRouter);
 app.use('/p/api/v1/test', testRouter);
 app.use('/p/api/v1/feedback', feedbackRouter);
 app.use('/p/api/v1/aptitude', aptitudeRouter);
-// app.use('/api/v1/payment', paymentRouter);
+// app.use('/p/api/v1/payment', paymentRouter);
 
 app.listen(PORT, ()=>{
     console.log(`Server started at port ${PORT}`);

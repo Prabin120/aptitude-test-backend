@@ -23,7 +23,7 @@ const userTestSchema = new mongoose.Schema<IUserTest>({
     codingAnswers: [{type: Object}],
     marksAchieved: {type: Number},
     totalMarks: {type: Number},
-    // paid: {type: Boolean, default: false},
+    paid: {type: Boolean, default: false},
     attempted: {type: Boolean, default: false}
 },{ timestamps: true })
 
