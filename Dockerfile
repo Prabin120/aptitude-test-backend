@@ -14,6 +14,9 @@ COPY package*.json ./
 # Install all dependencies (including dev dependencies in production build)
 RUN npm install
 
+# Ensure TypeScript is installed
+RUN npm install typescript --save-dev
+
 # Copy the rest of the application code
 COPY . .
 
@@ -45,4 +48,3 @@ EXPOSE 8000
 
 # Start Redis and the Node.js application
 CMD ["sh", "-c", "redis-server --daemonize yes && npm run start"]
-# CMD ["sh", "-c", "redis-server --daemonize yes && npm run dev"]
