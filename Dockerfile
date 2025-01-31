@@ -1,26 +1,16 @@
 # Stage 1: Build the application
 FROM node:18-alpine AS builder
 
-# Set the working directory
 WORKDIR /app
 
-# Define build argument and set as environment variable
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
-
-# Copy package.json and package-lock.json (if available)
+# Copy package files
 COPY package*.json ./
 
-# Install all dependencies (including dev dependencies in production build)
-RUN npm install
+# Install all dependencies (including devDependencies)
+RUN npm install --production=false
 
-# Ensure TypeScript is installed
-RUN npm install typescript --save-dev
-
-# Copy the rest of the application code
+# Copy the rest and build
 COPY . .
-
-# Build the application for production
 RUN npm run build
 
 # Stage 2: Production runtime image

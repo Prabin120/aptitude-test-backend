@@ -41,7 +41,6 @@
     "redis": "^4.7.0",
     "slugify": "^1.6.6",
     "ts-node": "^10.9.2",
-    "tsc": "^2.0.4",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
