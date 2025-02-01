@@ -28,7 +28,7 @@ ENV NODE_ENV=${NODE_ENV}
 
 # Copy only production dependencies
 COPY package*.json ./
-RUN npm install --only=production
+RUN npm install --production
 
 # Copy the built application from the builder stage
 COPY --from=builder /app/dist ./dist

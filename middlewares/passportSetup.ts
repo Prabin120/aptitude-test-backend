@@ -6,6 +6,7 @@ import { googleLogin } from "../controllers/authController";
 // Environment variables
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "your-google-client-id";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "your-google-client-secret";
+const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL;
 
 // Passport strategy
 passport.use(
@@ -13,7 +14,7 @@ passport.use(
         {
             clientID: GOOGLE_CLIENT_ID,
             clientSecret: GOOGLE_CLIENT_SECRET,
-            callbackURL: "/p/api/v1/auth/google-login/callback", // Use relative path for callback
+            callbackURL: GOOGLE_CALLBACK_URL, // Use relative path for callback
         },
         (accessToken: string, refreshToken: string, profile: Profile, done: Function) => {
             // Save user profile to session or database
