@@ -115,8 +115,8 @@ const getTests = async (req: ICustomRequest, res: Response) => {
     try {
         const currentTime = Date.now();
         const ongoingTests = await Test.find({
-            startDateTime: { $gt: currentTime },
-            endDateTime: { $lt: currentTime },
+            startDateTime: { $lt: currentTime },
+            endDateTime: { $gt: currentTime },
             },
             "slug title startDateTime endDateTime duration description type"
         );
@@ -189,11 +189,14 @@ const examTestReport = async (req: ICustomRequest, res: Response) => {
         .populate<{ user: Pick<IUser, "name"> }>({
             path: "user", // Populate the 'user' reference
             select: "name", // Fetch only the 'name' field from User
+            match: { name: { $exists: true } }
         })
         .sort({ marksAchieved: -1 });
-        const data = userTest.map(item => ({
+        console.log(userTest);
+        
+        const data = userTest?.map(item => ({
             marksAchieved: item.marksAchieved,
-            name: item.user.name, // Access the populated name
+            name: item?.user?.name, // Access the populated name
         }))
         await client.set(key, JSON.stringify({data}), {EX: REDIS_EXPIRY});
         return res.status(200).json({data});
