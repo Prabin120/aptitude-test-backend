@@ -135,14 +135,11 @@ const getAllTests = async (req: ICustomRequest, res: Response) => {
 const getMyTests = async (req: ICustomRequest, res: Response) => {
     try {
         const userId = req.userId;
-
         const userTests = await UserTest.find({ user: userId })
             .populate('test', 'title slug description startDateTime endDateTime duration type') // Select necessary fields from Test schema
             .exec();
-
         const currentTime = new Date();
 
-        // Categorize the tests
         const upcomingTests: IUserTest[] = [];
         const ongoingTests: IUserTest[] = [];
         const pastTests: IUserTest[] = [];
