@@ -46,6 +46,25 @@ const authenticate = async (req: ICustomRequest, res: Response, next: NextFuncti
     }
 };
 
+const authenticateWithoutReturn = async (req: ICustomRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const token = req.cookies.access_token;
+        req.userId = "";
+        if (!token) {
+            res.status(401).json({ message: 'Authentication required' });
+            next();
+        } else{
+            const decodedToken = verifyToken(token);
+            const userId = decodedToken?.userId;
+            req.userId = userId;
+            next();
+        }
+    } catch (error) {
+        console.error(error);
+        next();
+    }
+};
+
 const adminAuthentication = async (req: ICustomRequest, res: Response, next: NextFunction): Promise<void> => {
     const token = req.cookies.access_token;    
     if (!token) {
@@ -76,4 +95,4 @@ const adminAuthentication = async (req: ICustomRequest, res: Response, next: Nex
     }
 };
 
-export { authenticate, adminAuthentication, verifyToken };
+export { authenticate, adminAuthentication, verifyToken, authenticateWithoutReturn };

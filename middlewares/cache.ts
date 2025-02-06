@@ -8,7 +8,6 @@ export async function checkCache(req: ICustomRequest, res: Response, next: NextF
   try {
     const key = req.originalUrl;
     // Fetch data from Redis
-    console.log('Fetching data from Redis cache. key:',key);
     const data = await client.get(key);
     if (data) {
       return res.json(JSON.parse(data));

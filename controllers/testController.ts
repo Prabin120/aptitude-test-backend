@@ -1,6 +1,6 @@
 import { Response } from "express";
 import ICustomRequest from "../utils/customRequest";
-import UserTest from "../models/userTest";
+import UserTest, { IUserTest } from "../models/userTest";
 import Test from "../models/tests";
 import Question from "../models/questions";
 import axios from "axios";
@@ -48,7 +48,7 @@ const submitTest = async(req:ICustomRequest, res:Response)=>{
         const userId = req.userId;
         const {aptitudeAnswers, codingAnswers, testId} = req.body;
         const userTest = await UserTest.findOne({ user: userId, test: testId});
-        if(userTest){
+        if(userTest?.attempted){
             return res.status(200).json({message: "You have already attempted this test"});
         }
         const test = await Test.findById(testId);
@@ -110,30 +110,61 @@ const createTest = async (req: ICustomRequest, res: Response) => {
     }
 };
 
-const getTests = async (req: ICustomRequest, res: Response) => {
-    const key = req.originalUrl;
+const getAllTests = async (req: ICustomRequest, res: Response) => {
+    const userId = req.userId;
     try {
-        const currentTime = Date.now();
-        const ongoingTests = await Test.find({
-            startDateTime: { $lt: currentTime },
-            endDateTime: { $gt: currentTime },
-            },
-            "slug title startDateTime endDateTime duration description type"
-        );
-        const upcomingTests = await Test.find({
-            startDateTime: { $gte: currentTime },
-            },
-            "slug title startDateTime endDateTime duration description type"
-        );
-        const pastTests = await Test.find({ endDateTime: { $lt: currentTime } },
-            "slug title startDateTime endDateTime duration description type"
-        )
-            .sort({ createdAt: -1 })
-            .limit(5);
-        return res.status(200).json({ upcomingTests, pastTests, ongoingTests });
+        const tests = await Test.find({startDateTime: {$gt: new Date()}}, 
+        "_id title slug description startDateTime endDateTime duration type amount"
+        ).sort({ startDateTime: 1 });
+        
+        const testsWithUserStatus = await Promise.all(tests.map(async (test) => {
+            const userTest = userId && await UserTest.findOne({ user: userId, test: test._id });
+            return {
+                ...test.toObject(),
+                registered: userTest ? true : false
+            };
+        }));
+
+        return res.status(200).json({ tests: testsWithUserStatus });
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: "Server error" });
+    }
+};
+
+const getMyTests = async (req: ICustomRequest, res: Response) => {
+    try {
+        const userId = req.userId;
+
+        const userTests = await UserTest.find({ user: userId })
+            .populate('test', 'title slug description startDateTime endDateTime duration type') // Select necessary fields from Test schema
+            .exec();
+
+        const currentTime = new Date();
+
+        // Categorize the tests
+        const upcomingTests: IUserTest[] = [];
+        const ongoingTests: IUserTest[] = [];
+        const pastTests: IUserTest[] = [];
+
+        userTests.forEach((userTest) => {
+            const test = userTest.test as any; // Cast to access test details
+            if (test) {
+                const { startDateTime, endDateTime } = test;
+                if (startDateTime > currentTime) {
+                    upcomingTests.push(test);
+                } else if (endDateTime && endDateTime > currentTime) {
+                    ongoingTests.push(test);
+                } else {
+                    pastTests.push(test);
+                }
+            }
+        });
+
+        return res.status(200).json({ upcomingTests, pastTests, ongoingTests });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to fetch user tests' });
     }
 };
 
@@ -192,8 +223,6 @@ const examTestReport = async (req: ICustomRequest, res: Response) => {
             match: { name: { $exists: true } }
         })
         .sort({ marksAchieved: -1 });
-        console.log(userTest);
-        
         const data = userTest?.map(item => ({
             marksAchieved: item.marksAchieved,
             name: item?.user?.name, // Access the populated name
@@ -206,4 +235,4 @@ const examTestReport = async (req: ICustomRequest, res: Response) => {
     }
 };
 
-export { validateTestQuestion, createTest, getTests, getSingleTest, submitTest, examTestReport };
+export { validateTestQuestion, createTest, getMyTests, getSingleTest, submitTest, examTestReport, getAllTests };

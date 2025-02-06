@@ -15,6 +15,7 @@ interface ITest{
     startDateTime?: Date;
     endDateTime?: Date;
     duration?: number;
+    amount: number
 };
 
 const testSchema = new mongoose.Schema<ITest>({
@@ -29,7 +30,8 @@ const testSchema = new mongoose.Schema<ITest>({
     type: {type: String, enum: ['exam', 'practice'], default: 'practice'},
     startDateTime: {type: Date},
     endDateTime: {type: Date},
-    duration: {type: Number} //in minutes
+    duration: {type: Number}, //in minutes
+    amount: {type: Number, default: 0}
 },{
     timestamps: true
 });

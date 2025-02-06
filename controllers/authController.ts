@@ -60,7 +60,7 @@ const generateToken = (
         .json({
             message: message,
             data: {
-                id: user._id,
+                _id: user._id,
                 name: user.name,
                 email: user.email,
                 mobile: user.mobile,
@@ -214,7 +214,7 @@ const resetPassword = async (req: ICustomRequest, res: Response) => {
         .json({
             message: "Password reset successfully",
             data: {
-                id: user._id,
+                _id: user._id,
                 name: user.name,
                 email: user.email,
                 mobile: user.mobile,

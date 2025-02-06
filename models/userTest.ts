@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 
-interface IUserTest{
+export interface IUserTest{
     readonly _id: string;
     user: string
     test: string
@@ -18,7 +18,7 @@ interface IUserTest{
 const userTestSchema = new mongoose.Schema<IUserTest>({
     _id: {type: String, default: uuidv4},
     user: {type: String, ref: 'User', required: true},
-    test: {type: String, required: true},
+    test: {type: String, ref: 'Test', required: true},
     aptitudeAnswers: [{type: Object}],
     codingAnswers: [{type: Object}],
     marksAchieved: {type: Number},

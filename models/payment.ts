@@ -7,6 +7,8 @@ interface IPayment{
     paymentId: string;
     paymentMethod: string;
     amount: number;
+    description?: string;
+    paymentObject?: object
 };
 
 const paymentSchema = new mongoose.Schema<IPayment>({
@@ -14,7 +16,9 @@ const paymentSchema = new mongoose.Schema<IPayment>({
     user: {type: mongoose.Schema.ObjectId, ref:'User', index: true, required: true},
     paymentId: {type: String, required: true},
     paymentMethod: {type: String, required: true},
-    amount: {type: Number, required: true}
+    amount: {type: Number, required: true},
+    description: {type: String},
+    paymentObject: {type: Object}
 },{
     timestamps: true
 });
