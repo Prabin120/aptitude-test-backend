@@ -1,35 +1,31 @@
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 
-export interface IUserTest{
+export interface IGroupUserTest{
     readonly _id: string;
     user: string
     test: string
     aptitudeAnswers?: {[key: string]: string | [string]};
     codingAnswers?: object;
     marksAchieved?: number;
-    paid: boolean;
     bookedTime: Date;
     duration: number;
     totalMarks?: number;
     attempted: boolean;
-    type: "group" | "global"
 }
 
-const userTestSchema = new mongoose.Schema<IUserTest>({
+const groupUserTestSchema = new mongoose.Schema<IGroupUserTest>({
     _id: {type: String, default: uuidv4},
     user: {type: String, ref: 'User', required: true},
-    test: {type: String, ref: 'Test', required: true, index: true},
+    test: {type: String, ref: 'GroupTest', required: true},
     aptitudeAnswers: [{type: Object}],
     codingAnswers: [{type: Object}],
     marksAchieved: {type: Number},
     totalMarks: {type: Number},
-    paid: {type: Boolean, default: false},
     attempted: {type: Boolean, default: false},
-    type: {type: String, enum:['group', 'global'], default: 'global'},
 },{ timestamps: true })
 
-userTestSchema.index({user: 1, test: 1})
+groupUserTestSchema.index({user: 1, test: 1}, {unique: true})
 
-const UserTest = mongoose.model('UserTest', userTestSchema)
-export default UserTest
+const UserGroupTest = mongoose.model('UserGroupTest', groupUserTestSchema)
+export default UserGroupTest

@@ -1,6 +1,7 @@
 import express from 'express';
 import { adminAuthentication } from '../middlewares/authMiddleware';
-import { addQuestion, getAllQuestion, getQuestion, getQuestionByCategoty, getQuestionByCompany, getQuestionById, getQuestionByTopic, modifyQuestion } from '../controllers/questionController';
+import { addQuestion, getAllQuestion, getQuestion, getQuestionByCategoty, getQuestionByCompany, 
+    getQuestionById, getQuestionByTopic, modifyQuestion, searchLikeQuestions } from '../controllers/questionController';
 import { addQuestionTag, getQuestionTags } from '../controllers/questionTagsController';
 import {checkCache} from '../middlewares/cache';
 
@@ -16,5 +17,6 @@ router.get('/question', checkCache, getQuestionById);
 router.put('/question',adminAuthentication, modifyQuestion);
 router.post('/question-tag',adminAuthentication, addQuestionTag);
 router.get('/question-tag', checkCache, getQuestionTags);
+router.get('/questions/like', searchLikeQuestions);
 
 export default router

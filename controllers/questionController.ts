@@ -228,6 +228,20 @@ const modifyQuestion = async (req: ICustomRequest, res: Response) => {
 	}
 };
 
+const searchLikeQuestions = async(req:ICustomRequest, res:Response)=>{
+	const query = req.params
+	console.log("search like:", query);
+	try {
+		const questions = Question.find({title: { $regex: '.*' + query + '.*' }},
+			"questionNo slug title marks"
+		).limit(5);
+		console.log(questions);
+		return res.status(200).json(questions)
+	} catch (error) {
+		return res.status(500).json({ message: "Server error" });
+	}
+}
+
 export {
 	addQuestion,
 	getQuestion,
@@ -237,4 +251,5 @@ export {
 	getQuestionByCategoty,
 	getQuestionByTopic,
 	getQuestionByCompany,
+	searchLikeQuestions,
 };

@@ -2,15 +2,13 @@ import mongoose from "mongoose";
 import slugify from "slugify";
 import { v4 as uuidv4 } from 'uuid';
 
-interface ITest{
+export interface ITest{
     readonly _id: string;
     title: string;
     slug: string;
     description: string;
-    apti_list?: string[];
-    aptiMarks?: string
-    code_list?: string[];
-    codingMarks?: string
+    apti_list?: Object[];
+    code_list?: Object[];
     type: "exam" | "practice"
     startDateTime?: Date;
     endDateTime?: Date;
@@ -23,10 +21,8 @@ const testSchema = new mongoose.Schema<ITest>({
     title: {type: String, index: true, unique: true, required: true},
     slug: {type: String, index: true, unique: true},
     description: {type: String, required: true},
-    apti_list: [{type: String}],
-    aptiMarks: {type: String},
-    code_list: [{type: String}],
-    codingMarks: {type: String},
+    apti_list: [{type: Object}],
+    code_list: [{type: Object}],
     type: {type: String, enum: ['exam', 'practice'], default: 'practice'},
     startDateTime: {type: Date},
     endDateTime: {type: Date},

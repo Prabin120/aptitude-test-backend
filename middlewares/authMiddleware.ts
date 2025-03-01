@@ -26,21 +26,18 @@ const authenticate = async (req: ICustomRequest, res: Response, next: NextFuncti
         const token = req.cookies.access_token;
         if (!token) {
             res.status(401).json({ message: 'Authentication required' });
-            // res.clearCookie('access_token', { httpOnly: true});
             return;
         }
         const decodedToken = verifyToken(token);
         const userId = decodedToken?.userId;
         if(!userId){
           res.status(401).json({ message: 'Authentication failed'});
-        //   res.clearCookie('access_token', { httpOnly: true});
           return;
         }
         req.userId = userId;
         next();
     } catch (error) {
         console.error(error);
-        // res.clearCookie('access_token', { httpOnly: true});
         res.status(401).json({ message: (error as Error).message });
         return;
     }
@@ -51,7 +48,6 @@ const authenticateWithoutReturn = async (req: ICustomRequest, res: Response, nex
         const token = req.cookies.access_token;
         req.userId = "";
         if (!token) {
-            res.status(401).json({ message: 'Authentication required' });
             next();
         } else{
             const decodedToken = verifyToken(token);

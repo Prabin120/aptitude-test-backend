@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 
 interface IPayment{
     readonly _id: string;
-    user: mongoose.Types.ObjectId;
+    user: string;
     paymentId: string;
     paymentMethod: string;
     amount: number;
@@ -13,7 +13,7 @@ interface IPayment{
 
 const paymentSchema = new mongoose.Schema<IPayment>({
     _id: {type: String, default: uuidv4},
-    user: {type: mongoose.Schema.ObjectId, ref:'User', index: true, required: true},
+    user: {type: String, ref:'User', index: true, required: true},
     paymentId: {type: String, required: true},
     paymentMethod: {type: String, required: true},
     amount: {type: Number, required: true},

@@ -11,7 +11,7 @@ import {
 dotenv.config();
 
 // Create a transporter object
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
     secure: false, // use SSL
@@ -41,7 +41,7 @@ const sendMailResetPasswordMail = async (
         mailOptions.to = receipantMailId;
         mailOptions.subject = forgotPasswordSubject;
         mailOptions.html = forgotPasswordBody(receipantName, resetLink);
-        const info = await transporter.sendMail(mailOptions);
+        transporter.sendMail(mailOptions);
         return true;
     } catch (error) {
         console.log(error);
@@ -58,13 +58,16 @@ const sendMailGotFeedback = async (
         return false;
     }
     try {
+        mailOptions.to = process.env.PERSONAL_EMAIL_ID;
         mailOptions.subject = "Feedback AptiCode";
         mailOptions.html = `
-        Mail from ${receipantMailId}
-        Name: ${receipantName}
-        Feedback Subject: ${subject}
-        Feedback Message: ${message}
-      `;
+            Mail from ${receipantMailId}
+            Name: ${receipantName}
+            Feedback Subject: ${subject}
+            Feedback Message: ${message}
+        `;
+        const info = await transporter.sendMail(mailOptions);
+        return true;
     } catch (error) {
         console.log(error);
         return false;
