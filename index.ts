@@ -9,6 +9,7 @@ import feedbackRouter from './routes/feedbackRoute';
 import aptitudeRouter from './routes/aptitudeRoute';
 import groupTestRouter from './routes/groupTestRoute';
 import slowDown from 'express-slow-down';
+import { initialLogging, errorLogging } from './middlewares/logging';
 
 const app = express();
 const PORT = process.env.PORT
@@ -32,6 +33,7 @@ const limiter = slowDown({
     maxDelayMs: 1000, // max global delay of 5 seconds
 });
 
+app.use(initialLogging);
 app.use(limiter)
 app.use(express.json())
 app.use(cookieParser());
@@ -47,6 +49,8 @@ app.use('/p/api/v1/test', testRouter);
 app.use('/p/api/v1/feedback', feedbackRouter);
 app.use('/p/api/v1/aptitude', aptitudeRouter);
 app.use('/p/api/v1/group-test', groupTestRouter);
+
+app.use(errorLogging);
 
 app.listen(PORT, ()=>{
     console.log(`Server started at port ${PORT}`);
