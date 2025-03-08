@@ -223,14 +223,15 @@ const modifyGroupTest = async (req: ICustomRequest, res: Response) => {
             return res.status(400).json({ message: "You Can't change passed or ongoing test Time" });
         }
         if(data.addParticipants){
-            const diff = Number(groupTest.totalParticipants) - groupTest.participants.length
-            if(diff < data.addParticipants){
-                return res.status(400).json({ message: `Total participants exceeded, you are trying to add ${data.addPaticipants.length} participants but only ${Math.abs(diff)} are left` });
+            const newParticipants = data.addParticipants.split(",").map((p: string) => p.trim());
+            const diff = Number(groupTest.totalParticipants) - (groupTest.participants.length)
+            if(diff < newParticipants.length){
+                return res.status(400).json({ message: `Total participants exceeded, you are trying to add ${newParticipants.length} participants but only ${Math.abs(diff)} are left` });
             }
             let participants = groupTest.participants
-            participants.push(...data.addParticipants)
+            participants.push(...newParticipants)
             groupTest.participants = [...new Set(participants)]
-            sendGroupTestMail(data.addParticipants, groupTest._id);
+            sendGroupTestMail(newParticipants, groupTest._id);
         }
         if(data.duration || data.startDateTime){
             
