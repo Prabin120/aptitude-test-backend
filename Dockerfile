@@ -37,4 +37,4 @@ COPY --from=builder /app/dist ./dist
 EXPOSE 8000
 
 # Start Redis and the Node.js application
-CMD ["sh", "-c", "redis-server --daemonize yes && npm run dev"]
+CMD ["sh", "-c", "redis-server --daemonize yes && npm run start"]
