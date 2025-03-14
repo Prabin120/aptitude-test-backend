@@ -11,6 +11,7 @@ import Question from "../models/questions";
 import { REDIS_EXPIRY } from "../consts";
 import client from "../utils/redis";
 import { ITest } from "../models/tests";
+import { clearCache } from "../middlewares/cache";
 
 const createGroupTest = async (req: ICustomRequest, res: Response) => {
     const userId = req.userId;
@@ -213,6 +214,7 @@ const modifyGroupTest = async (req: ICustomRequest, res: Response) => {
     const userId = req.userId;
     const { testId } = req.params;
     const data = req.body;
+    const key = req.originalUrl;
     try {
         const groupTest = await GroupTest.findById(testId);
         if (!groupTest || groupTest.organizer !== userId) {
@@ -254,6 +256,7 @@ const modifyGroupTest = async (req: ICustomRequest, res: Response) => {
         groupTest.code_list = data.code_list
         groupTest.apti_list = data.apti_list
         await groupTest.save();
+        clearCache(key);
         return res.status(200).json({ groupTest });
     } catch (error) {
         console.error(error);

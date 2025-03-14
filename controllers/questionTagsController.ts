@@ -57,9 +57,11 @@ const addQuestionTag = async (req: ICustomRequest, res: Response) => {
 const getQuestionTags = async (req: ICustomRequest, res: Response) => {
     const key = req.originalUrl;
     try {
-        const categories = await AptiQuestionCategories.find({}).select("-createdAt -updatedAt -__v");
-        const topics = await AptiQuestionTopics.find({}).select("-createdAt -updatedAt -__v");
-        const companies = await AptiQuestionCompanies.find({}).select("-createdAt -updatedAt -__v");
+        const [categories, topics, companies] = await Promise.all([
+            AptiQuestionCategories.find({}).select("-createdAt -updatedAt -__v"),
+            AptiQuestionTopics.find({}).select("-createdAt -updatedAt -__v"),
+            AptiQuestionCompanies.find({}).select("-createdAt -updatedAt -__v")
+        ]);
         await client.set(key, JSON.stringify({ categories, topics, companies }), {EX: REDIS_EXPIRY});
         return res.status(200).json({ categories, topics, companies });
     } catch (error) {
