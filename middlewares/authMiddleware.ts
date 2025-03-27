@@ -8,7 +8,7 @@ dotenv.config();
 const JWT_ACCESS_SECRET_KEY = process.env.JWT_ACCESS_SECRET_KEY as string;
 
 interface DecodedToken{
-    userId: string;
+    username: string;
     role: string;
     name: string;
 }
@@ -29,12 +29,12 @@ const authenticate = async (req: ICustomRequest, res: Response, next: NextFuncti
             return;
         }
         const decodedToken = verifyToken(token);
-        const userId = decodedToken?.userId;
-        if(!userId){
+        const username = decodedToken?.username;
+        if(!username){
           res.status(401).json({ message: 'Authentication failed'});
           return;
         }
-        req.userId = userId;
+        req.username = username;
         next();
     } catch (error) {
         console.error(error);
@@ -46,13 +46,13 @@ const authenticate = async (req: ICustomRequest, res: Response, next: NextFuncti
 const authenticateWithoutReturn = async (req: ICustomRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         const token = req.cookies.access_token;
-        req.userId = "";
+        req.username = "";
         if (!token) {
             next();
         } else{
             const decodedToken = verifyToken(token);
-            const userId = decodedToken?.userId;
-            req.userId = userId;
+            const username = decodedToken?.username;
+            req.username = username;
             next();
         }
     } catch (error) {
@@ -70,8 +70,8 @@ const adminAuthentication = async (req: ICustomRequest, res: Response, next: Nex
     }
     try {
         const decodedToken = verifyToken(token);
-        const userId = decodedToken?.userId;
-        const user = await User.findById(userId);
+        const username = decodedToken?.username;
+        const user = await User.findOne({username});
         if (!user) {
             res.status(401).json({ message: 'User not found' });
             // res.clearCookie('access_token', { httpOnly: true});
@@ -81,7 +81,7 @@ const adminAuthentication = async (req: ICustomRequest, res: Response, next: Nex
             res.status(400).json({ message: "Only admin can use the calls" });
             return;
         }
-        req.userId = userId;
+        req.username = username;
         next();
     } catch (error) {
         console.error(error);

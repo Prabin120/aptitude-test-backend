@@ -16,11 +16,19 @@ const JWT_PASSWORD_RESET_TIME = process.env.JWT_PASSWORD_RESET_TIME as string;
 const CLIENT_DOMAIN_URL = process.env.CLIENT_DOMAIN_URL as string;
 
 interface ISignUpBody {
+    username: string;
     email: string;
     password: string;
     name: string;
     mobile?: string;
     institute?: string;
+    bio?: string;
+    location?: string;
+    company?: string;
+    github?: string;
+    twitter?: string;
+    website?: string;
+    memberSince?: string;
 }
 interface ILoginBody {
     email: string;
@@ -28,11 +36,11 @@ interface ILoginBody {
 }
 
 interface DecodedToken {
-    userId: string;
+    username: string;
 }
 
-const getToken = (userId: string, name: string, role: string, refresh = false) => {
-    return jwt.sign({ userId, name, role }, JWT_ACCESS_SECRET_KEY, {
+const getToken = (username: string, name: string, role: string, refresh = false) => {
+    return jwt.sign({ username, name, role }, JWT_ACCESS_SECRET_KEY, {
         expiresIn: refresh ? JWT_REFRESH_EXPIRY_TIME : JWT_ACCESS_EXPIRY_TIME,
     });
 };
@@ -43,8 +51,8 @@ const generateToken = (
     status: number,
     message: string
 ) => {
-    const access_token = getToken(user._id, user.name, user.role);
-    const refresh_token = getToken(user._id, user.name, user.role, true);
+    const access_token = getToken(user.username, user.name, user.role);
+    const refresh_token = getToken(user.username, user.name, user.role, true);
     return res
         .cookie("access_token", access_token, {
             httpOnly: true,
@@ -60,25 +68,24 @@ const generateToken = (
         .json({
             message: message,
             data: {
-                _id: user._id,
                 name: user.name,
                 email: user.email,
                 mobile: user.mobile,
-                institute: user.institute,
+                username: user.username,
             },
         });
 };
 
 const signUp = async (req: ICustomRequest, res: Response) => {
     try {
-        const { email, password, name, mobile, institute }: ISignUpBody = req.body;
-        const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
+        const { username, email, password, name, mobile, institute, bio, location, company, github, twitter, website }: ISignUpBody = req.body;
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (existingUser) {
             let message = "";
             message =
                 email === existingUser.email
                     ? "Email already in use"
-                    : "Mobile number already in use";
+                    : "Username already in use";
             return res.status(400).json({ message });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -88,6 +95,14 @@ const signUp = async (req: ICustomRequest, res: Response) => {
             name,
             mobile,
             institute,
+            username,
+            bio,
+            location,
+            company,
+            github,
+            twitter,
+            website,
+            memberSince: new Date().toISOString(),
         });
         await newUser.save();
         return generateToken(res, newUser, 201, "User created successfully");
@@ -116,10 +131,10 @@ const login = async (req: ICustomRequest, res: Response) => {
 };
 
 const changePassword = async (req: ICustomRequest, res: Response) => {
-    const userId = req.userId;
+    const username = req.username;
     const { oldPassword, newPassword } = req.body;
     try {
-        const user = await User.findById(userId);
+        const user = await User.findOne({username});
         if (!user) {
             return res.status(403).json({ message: "Not authorised" });
         }
@@ -149,7 +164,7 @@ const forgotPassword = async (req: ICustomRequest, res: Response) => {
             return res.status(403).json({ message: "Email address not found" });
         }
         const token = jwt.sign(
-            { userId: user._id, role: user.role },
+            { username: user.username, role: user.role },
             JWT_ACCESS_SECRET_KEY,
             {
                 expiresIn: JWT_PASSWORD_RESET_TIME,
@@ -185,12 +200,12 @@ const resetPassword = async (req: ICustomRequest, res: Response) => {
         tokenId as string,
         JWT_ACCESS_SECRET_KEY
     ) as DecodedToken;
-    const userId = decodedToken.userId;
-    if (!userId) {
+    const username = decodedToken.username;
+    if (!username) {
         res.status(401).json({ message: "Authentication failed" });
         return;
     }
-    const user = await User.findById(userId);
+    const user = await User.findOne({username});
     if (!user) {
         res.status(404).json({ message: "User not found" });
         return;
@@ -198,7 +213,7 @@ const resetPassword = async (req: ICustomRequest, res: Response) => {
     user.password = await bcrypt.hash(password, 10);
     await user.save();
     const token = jwt.sign(
-        { userId: user._id, role: user.role },
+        { username: user.username, role: user.role },
         JWT_ACCESS_SECRET_KEY,
         {
             expiresIn: JWT_ACCESS_EXPIRY_TIME,
@@ -214,7 +229,7 @@ const resetPassword = async (req: ICustomRequest, res: Response) => {
         .json({
             message: "Password reset successfully",
             data: {
-                _id: user._id,
+                username: user.username,
                 name: user.name,
                 email: user.email,
                 mobile: user.mobile,
@@ -234,14 +249,14 @@ const refreshToken = async (req: Request, res: Response) => {
             return res.status(401).json({ message: "Authentication required" });
         }
         const decodedToken = verifyToken(token);
-        const userId = decodedToken?.userId;
+        const username = decodedToken?.username;
         const role = decodedToken?.role;
         const name = decodedToken?.name ?? "";
-        if (!userId || !role) {
+        if (!username || !role) {
             return res.status(401).json({ message: "Authentication failed" });
         }
-        const access_token = getToken(userId, name, role);
-        const refresh_token = getToken(userId, name, role, true);
+        const access_token = getToken(username, name, role);
+        const refresh_token = getToken(username, name, role, true);
         res
             .cookie("access_token", access_token, {
                 httpOnly: true,
@@ -263,8 +278,10 @@ const refreshToken = async (req: Request, res: Response) => {
 
 const googleLogin = async (googleUser: {name: string, email: string, picture: string, mobile: string}) => {
     try {
+        console.log("googleUser", googleUser);
         const user = await User.findOne({ email: googleUser.email });
-        if (user) return {access_token: getToken(user._id, user.name, user.role), refresh_token: getToken(user._id, user.name, user.role, true)};
+        console.log("user", user);
+        if (user) return {access_token: getToken(user.username, user.name, user.role), refresh_token: getToken(user.username, user.name, user.role, true)};
         const hashedPassword = await bcrypt.hash(uuidv4.toString(), 10);
         const newUser = new User({
             email: googleUser.email,
@@ -275,7 +292,7 @@ const googleLogin = async (googleUser: {name: string, email: string, picture: st
             image: googleUser.picture,
         });
         await newUser.save();
-        return {access_token: getToken(newUser._id, newUser.name, newUser.role), refresh_token: getToken(newUser._id, newUser.name, newUser.role, true)};
+        return {access_token: getToken(newUser.username, newUser.name, newUser.role), refresh_token: getToken(newUser.username, newUser.name, newUser.role, true)};
     } catch (error) {
         console.error(error);
         return {access: "", refresh: ""};

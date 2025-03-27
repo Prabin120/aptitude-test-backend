@@ -14,7 +14,7 @@ import { ITest } from "../models/tests";
 import { clearCache } from "../middlewares/cache";
 
 const createGroupTest = async (req: ICustomRequest, res: Response) => {
-    const userId = req.userId;
+    const username = req.username;
     try {
         const data = req.body;
         if (!data.title || !data.description || !data.duration || !data.participants || !data.totalParticipants) {
@@ -36,7 +36,7 @@ const createGroupTest = async (req: ICustomRequest, res: Response) => {
         const orderId = await createOrder(options)
         const startDateTime = new Date(data.startDateTime);
         const endDateTime = startDateTime.getTime() + data.duration * 1000 * 60;
-        await GroupTest.create({ ...data, amount: options.amount, totalParticipants, participants, orderId: orderId, paid: false, organizer: userId, startDateTime, endDateTime });
+        await GroupTest.create({ ...data, amount: options.amount, totalParticipants, participants, orderId: orderId, paid: false, organizer: username, startDateTime, endDateTime });
         return res.status(200).json({
             success: true,
             msg: "Order Created",
@@ -51,16 +51,16 @@ const createGroupTest = async (req: ICustomRequest, res: Response) => {
 }
 
 const verifyGroupTestPayment = async (req: ICustomRequest, res:Response) =>{
-    const userId = req.userId;
+    const username = req.username;
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body
         const payment = await verifyPayment(razorpay_order_id, razorpay_payment_id, razorpay_signature)
         if (payment === undefined){
             return res.status(400).json({status: "failed", error: "Payment verification failed"})
         }
-        await Payment.create({ user: userId, paymentId: razorpay_payment_id, paymentMethod: "razorpay", amount: payment.amount, 
+        await Payment.create({ user: username, paymentId: razorpay_payment_id, paymentMethod: "razorpay", amount: payment.amount, 
             paymentObject: payment, description: payment.description })
-        const groupTest = await GroupTest.findOne({orderId: orderId, organizer: userId})
+        const groupTest = await GroupTest.findOne({orderId: orderId, organizer: username})
         if(!groupTest){
             return res.status(400).json({message: "Something went wrong"})
         }
@@ -74,19 +74,19 @@ const verifyGroupTestPayment = async (req: ICustomRequest, res:Response) =>{
 }
 
 const addPaticipants = async (req: ICustomRequest, res: Response) => {
-    const userId = req.userId;
+    const username = req.username;
     try {
         const {testId} = req.query;
-        const isExists = await UserGroupTest.findOne({ user: userId, test: testId });
+        const isExists = await UserGroupTest.findOne({ user: username, test: testId });
         if (isExists) {
             return res.status(400).json({ message: "You have already registered" });
         }
-        const user = await User.findById(userId).select("email").exec();
+        const user = await User.findOne({username}).select("email").exec();
         const groupTest = await GroupTestMailStatus.findOne({ test: testId, email: user?.email });
         if (!groupTest) {
             return res.status(400).json({ message: "Either you are not invited or Invalid Group Test" });
         }
-        await UserGroupTest.create({ user: userId, test: testId});
+        await UserGroupTest.create({ user: username, test: testId});
         return res.status(200).json({ message: "Registration successfull" });
     } catch (error) {
         return res.status(400).json({ message: "Server error" });
@@ -95,8 +95,8 @@ const addPaticipants = async (req: ICustomRequest, res: Response) => {
 
 const getGroupTests = async( req: ICustomRequest, res: Response ) =>{
     try {
-        const userId = req.userId;
-        const userTests = await UserGroupTest.find({ user: userId },
+        const username = req.username;
+        const userTests = await UserGroupTest.find({ user: username },
                 "test attempted"
             )
             .sort({ createdAt: -1 })
@@ -145,11 +145,11 @@ const getSingleTest = async (req: ICustomRequest, res: Response) => {
 };
 
 const getGroupTestMailStatus = async (req: ICustomRequest, res: Response) => {
-    const userId = req.userId;
+    const username = req.username;
     const { testId } = req.query;
     try {
         const groupTest = await GroupTest.findById(testId);
-        if (!groupTest || groupTest.organizer !== userId) {
+        if (!groupTest || groupTest.organizer !== username) {
             return res.status(400).json({ message: "Invalid Group Test" });
         }
         const emailStatus = await GroupTestMailStatus.find({ test: testId },
@@ -163,9 +163,9 @@ const getGroupTestMailStatus = async (req: ICustomRequest, res: Response) => {
 
 
 const getOwnedGroupTests = async (req: ICustomRequest, res: Response) => {
-    const userId = req.userId;
+    const username = req.username;
     try {
-        const groupTests = await GroupTest.find({ organizer: userId, paid: true },
+        const groupTests = await GroupTest.find({ organizer: username, paid: true },
             "_id title startDateTime endDateTime"
         )
         .sort({ createdAt: -1 });
@@ -177,11 +177,11 @@ const getOwnedGroupTests = async (req: ICustomRequest, res: Response) => {
 
 const getDetailGroupTest = async (req: ICustomRequest, res: Response) => {
     const key = req.originalUrl;
-    const userId = req.userId;
+    const username = req.username;
     const { testId } = req.params;
     try {
         const groupTest = await GroupTest.findById(testId);
-        if (!groupTest || groupTest.organizer !== userId) {
+        if (!groupTest || groupTest.organizer !== username) {
             return res.status(400).json({ message: "Invalid Group Test" });
         }
         return res.status(200).json({ groupTest });
@@ -191,11 +191,11 @@ const getDetailGroupTest = async (req: ICustomRequest, res: Response) => {
 }
 
 const resendMail = async (req: ICustomRequest, res: Response) => {
-    const userId = req.userId;
+    const username = req.username;
     const { testId } = req.query;
     try {
         const groupTest = await GroupTest.findById(testId);
-        if (!groupTest || groupTest.organizer !== userId) {
+        if (!groupTest || groupTest.organizer !== username) {
             return res.status(400).json({ message: "Invalid Group Test" });
         }
         const failedEmails = await GroupTestMailStatus.find({ test: testId, status: "failed" })
@@ -211,13 +211,13 @@ const resendMail = async (req: ICustomRequest, res: Response) => {
 }
 
 const modifyGroupTest = async (req: ICustomRequest, res: Response) => {
-    const userId = req.userId;
+    const username = req.username;
     const { testId } = req.params;
     const data = req.body;
     const key = req.originalUrl;
     try {
         const groupTest = await GroupTest.findById(testId);
-        if (!groupTest || groupTest.organizer !== userId) {
+        if (!groupTest || groupTest.organizer !== username) {
             return res.status(400).json({ message: "Invalid Group Test" });
         }
         const currentTime = new Date();
@@ -265,19 +265,19 @@ const modifyGroupTest = async (req: ICustomRequest, res: Response) => {
 }
 
 const editEmail = async (req: ICustomRequest, res: Response) => {
-    const userId = req.userId;
+    const username = req.username;
     const { testId } = req.query;
     const { _id, email } = req.body;
     try {
         const groupTest = await GroupTest.findById(testId);
-        if (!groupTest || groupTest.organizer !== userId) {
+        if (!groupTest || groupTest.organizer !== username) {
             return res.status(400).json({ message: "Invalid Group Test" });
         }
         const isEmailExist = groupTest.participants.includes(email);
         if (isEmailExist) {
             return res.status(400).json({ message: "Email already exist" });
         }
-        const emailStatus = await GroupTestMailStatus.findById(_id);
+        const emailStatus = await GroupTestMailStatus.findOne(_id);
         if (!emailStatus || emailStatus.test !== testId) {
             return res.status(400).json({ message: "Invalid email" });
         }
@@ -367,16 +367,16 @@ const markCalculations = async (aptitudeAnswers: any, codingAnswers: any, test: 
 
 const submitTest = async(req:ICustomRequest, res:Response)=>{
     try {
-        const userId = req.userId;
+        const username = req.username;
         const {aptitudeAnswers, codingAnswers, testId} = req.body;
-        const userTest = await UserGroupTest.findOne({ user: userId, test: testId});
+        const userTest = await UserGroupTest.findOne({ user: username, test: testId});
         if(!userTest){
             return res.status(404).json({message: "Test not found"});
         }
         if(userTest.attempted){
             return res.status(200).json({message: "You have already attempted this test"});
         }
-        const test = await GroupTest.findById(testId);
+        const test = await GroupTest.findOne(testId);
         if(!test){
             return res.status(404).json({message: "Test not found"});
         }

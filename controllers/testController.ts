@@ -29,9 +29,9 @@ const validateTestQuestion = async (req: ICustomRequest, res: Response) => {
 
 const submitTest = async(req:ICustomRequest, res:Response)=>{
     try {
-        const userId = req.userId;
+        const username = req.username;
         const {aptitudeAnswers, codingAnswers, testId} = req.body;
-        const userTest = await UserTest.findOne({ user: userId, test: testId});
+        const userTest = await UserTest.findOne({ user: username, test: testId});
         if(!userTest){
             return res.status(404).json({message: "Test not found"});
         }
@@ -88,20 +88,20 @@ const createTest = async (req: ICustomRequest, res: Response) => {
 };
 
 const getAllTests = async (req: ICustomRequest, res: Response) => {
-    const userId = req.userId;
+    const username = req.username;
     try {
         const tests = await Test.find({startDateTime: {$gt: new Date()}}, 
         "_id title slug description startDateTime endDateTime duration type amount"
         ).sort({ startDateTime: 1 });
         let testsWithUserStatus;
-        if(userId){
+        if(username){
             const testIds = tests.map((test)=>test._id);
-            const userTests = await UserTest.find({ user: userId, test: {$in: testIds} });
+            const userTests = await UserTest.find({ user: username, test: {$in: testIds} });
             const registeredTests = new Map(userTests.map((userTest)=>[userTest.test.toString(), true]));
             testsWithUserStatus = tests.map((test) => {
                 return {
                     ...test.toObject(),
-                    registered: userId? registeredTests.has(test._id.toString()): false
+                    registered: username? registeredTests.has(test._id.toString()): false
                 };
             });
         } else{
@@ -117,8 +117,8 @@ const getAllTests = async (req: ICustomRequest, res: Response) => {
 
 const getMyTests = async (req: ICustomRequest, res: Response) => {
     try {
-        const userId = req.userId;
-        const userTests = await UserTest.find({ user: userId },
+        const username = req.username;
+        const userTests = await UserTest.find({ user: username },
                 "test attempted"
             )
             .populate('test', 'title slug description startDateTime endDateTime duration type') // Select necessary fields from Test schema
@@ -231,19 +231,19 @@ const examTestReport = async (req: ICustomRequest, res: Response) => {
 };
 
 const registerTest = async (req: ICustomRequest, res: Response) => {
-    const userId = req.userId;
+    const username = req.username;
     try {
         const { testId } = req.body
         const test = await Test.findById(testId)
         if(!test){
             return res.status(400).json({message: "Test is not found"})
         }
-        const userTest = await UserTest.findOne({user: req.userId, test: testId})
+        const userTest = await UserTest.findOne({user: req.username, test: testId})
         if(userTest){
             return res.status(400).json({message: "you are already registered"})
         }
         if(test.type === 'practice'){
-            await UserTest.create({ user: userId, test: testId, paid: true })
+            await UserTest.create({ user: username, test: testId, paid: true })
             return res.status(200).json({message: "Registration is SuccessFull"})
         }
         const options = {
@@ -269,16 +269,16 @@ const registerTest = async (req: ICustomRequest, res: Response) => {
 };
 
 const verifyTestPayment = async(req: ICustomRequest, res: Response)=>{
-    const userId = req.userId;
+    const username = req.username;
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, testId } = req.body
         const payment = await verifyPayment(razorpay_order_id, razorpay_payment_id, razorpay_signature)
         if (payment === undefined){
             return res.status(400).json({status: "failed", error: "Payment verification failed"})
         }
-        await Payment.create({ user: userId, paymentId: razorpay_payment_id, paymentMethod: "razorpay", 
+        await Payment.create({ user: username, paymentId: razorpay_payment_id, paymentMethod: "razorpay", 
             amount: payment.amount, paymentObject: payment, description: payment.description })
-        await UserTest.create({ user: userId, test: testId, paid: true })
+        await UserTest.create({ user: username, test: testId, paid: true })
         return res.status(200).json({message: "Registration successfull"})
     } catch (error) {
         return res.status(400).json({message: "Server error"})
