@@ -23,17 +23,17 @@ const profile = async(req:ICustomRequest, res:Response)=>{
 }
 
 const editProfile = async(req:ICustomRequest, res:Response)=>{
-    const username = req.username;
-    console.log("username: ", username);
+    const existingUsername = req.username;
     try {
-        const {name, mobile, institute, bio, location, company, github, twitter, website} = req.body;
-        const user = await User.findOne({username});
+        const {username, name, mobile, institute, bio, location, company, github, twitter, website} = req.body;
+        const user = await User.findOne({username: existingUsername});
         if(!user){
             return res.status(403).json({message: "Not authorised"});
         }
-        if(user.mobile !== mobile && await User.findOne({mobile})){
-            return res.status(400).json({message: "Mobile number already in use"})
+        if(username && username !== user.username && await User.findOne({username})){
+            return res.status(400).json({message: "Username already in use"})
         }
+        user.username = username || user.username;
         user.name = name || user.name;
         user.mobile = mobile || user.mobile;
         user.institute = institute || user.institute;

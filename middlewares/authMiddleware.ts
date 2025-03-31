@@ -15,9 +15,12 @@ interface DecodedToken{
 const verifyToken = (token: string) => {
     try {
         const decodedToken = jwt.verify(token, JWT_ACCESS_SECRET_KEY) as DecodedToken;
+        if (!decodedToken || !decodedToken.username || !decodedToken.role || !decodedToken.name) {
+            return undefined;
+        }
         return decodedToken;
     } catch (error) {
-        return
+        return undefined;
     }
 };
 
@@ -29,12 +32,11 @@ const authenticate = async (req: ICustomRequest, res: Response, next: NextFuncti
             return;
         }
         const decodedToken = verifyToken(token);
-        const username = decodedToken?.username;
-        if(!username){
-          res.status(401).json({ message: 'Authentication failed'});
-          return;
+        if (!decodedToken) {
+            res.status(401).json({ message: 'Authentication failed' });
+            return;
         }
-        req.username = username;
+        req.username = decodedToken.username;
         next();
     } catch (error) {
         console.error(error);
@@ -49,10 +51,11 @@ const authenticateWithoutReturn = async (req: ICustomRequest, res: Response, nex
         req.username = "";
         if (!token) {
             next();
-        } else{
+        } else {
             const decodedToken = verifyToken(token);
-            const username = decodedToken?.username;
-            req.username = username;
+            if (decodedToken) {
+                req.username = decodedToken.username;
+            }
             next();
         }
     } catch (error) {
@@ -65,28 +68,26 @@ const adminAuthentication = async (req: ICustomRequest, res: Response, next: Nex
     const token = req.cookies.access_token;    
     if (!token) {
         res.status(401).json({ message: 'Authentication required' });
-        // res.clearCookie('access_token', { httpOnly: true});
         return;
     }
     try {
         const decodedToken = verifyToken(token);
-        const username = decodedToken?.username;
-        const user = await User.findOne({username});
-        if (!user) {
-            res.status(401).json({ message: 'User not found' });
-            // res.clearCookie('access_token', { httpOnly: true});
+        if (!decodedToken) {
+            res.status(401).json({ message: 'Authentication failed' });
             return;
         }
-        if (user.role !== "admin") {
+        
+        const role = decodedToken.role;
+        if (role !== "admin") {
             res.status(400).json({ message: "Only admin can use the calls" });
             return;
         }
-        req.username = username;
+        
+        req.username = decodedToken.username;
         next();
     } catch (error) {
         console.error(error);
         res.status(401).json({ message: (error as Error).message });
-        // res.clearCookie('access_token', { httpOnly: true});
         return;
     }
 };

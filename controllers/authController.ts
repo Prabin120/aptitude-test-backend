@@ -79,6 +79,9 @@ const generateToken = (
 const signUp = async (req: ICustomRequest, res: Response) => {
     try {
         const { username, email, password, name, mobile, institute, bio, location, company, github, twitter, website }: ISignUpBody = req.body;
+        if (!username || !email || !password || !name) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
         const existingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (existingUser) {
             let message = "";
@@ -93,21 +96,21 @@ const signUp = async (req: ICustomRequest, res: Response) => {
             email,
             password: hashedPassword,
             name,
-            mobile,
-            institute,
+            mobile : mobile ?? "",
+            institute : institute ?? "",
             username,
-            bio,
-            location,
-            company,
-            github,
-            twitter,
-            website,
+            bio : bio ?? "",
+            location : location ?? "",
+            company : company ?? "",
+            github : github ?? "",
+            twitter : twitter ?? "",
+            website : website ?? "",
             memberSince: new Date().toISOString(),
         });
         await newUser.save();
         return generateToken(res, newUser, 201, "User created successfully");
     } catch (error) {
-        console.error(error);
+        console.log("signup error", error);
         return res.status(500).json({ message: "Server error" });
     }
 };
@@ -125,20 +128,23 @@ const login = async (req: ICustomRequest, res: Response) => {
         }
         return generateToken(res, user, 200, "Login successful");
     } catch (error) {
-        console.error(error);
+        console.log("login error", error);
         return res.status(500).json({ message: "Server error" });
     }
 };
 
 const changePassword = async (req: ICustomRequest, res: Response) => {
     const username = req.username;
-    const { oldPassword, newPassword } = req.body;
+    const { confirmPassword, newPassword, currentPassword } = req.body;
     try {
+        if(confirmPassword !== newPassword){
+            return res.status(400).json({message: "New password and confirm password do not match"});
+        }
         const user = await User.findOne({username});
         if (!user) {
             return res.status(403).json({ message: "Not authorised" });
         }
-        const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
         if (!isPasswordValid) {
             return res.status(400).json({ message: "Invalid password" });
         }
@@ -146,6 +152,7 @@ const changePassword = async (req: ICustomRequest, res: Response) => {
         await user.save();
         return generateToken(res, user, 200, "Password changed successful");
     } catch (error) {
+        console.log("changePassword error", error);
         return res.status(500).json({ message: "Server error" });
     }
 };
@@ -161,7 +168,7 @@ const forgotPassword = async (req: ICustomRequest, res: Response) => {
         const { email } = req.body;
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(403).json({ message: "Email address not found" });
+            return res.status(404).json({ message: "Email address not found" });
         }
         const token = jwt.sign(
             { username: user.username, role: user.role },
@@ -186,6 +193,7 @@ const forgotPassword = async (req: ICustomRequest, res: Response) => {
             .status(500)
             .json({ message: "There is some issue please send a mail to support" });
     } catch (error) {
+        console.log("forgotPassword error", error);
         return res.status(500).json({ message: "Forgot password Server error" });
     }
 };
@@ -239,7 +247,7 @@ const resetPassword = async (req: ICustomRequest, res: Response) => {
 };
 
 const validToken = async (req: Request, res: Response) => {
-    return res.status(200);
+    return res.status(200).json({message: "Token is valid"});
 };
 
 const refreshToken = async (req: Request, res: Response) => {
@@ -249,14 +257,13 @@ const refreshToken = async (req: Request, res: Response) => {
             return res.status(401).json({ message: "Authentication required" });
         }
         const decodedToken = verifyToken(token);
-        const username = decodedToken?.username;
-        const role = decodedToken?.role;
-        const name = decodedToken?.name ?? "";
-        if (!username || !role) {
-            return res.status(401).json({ message: "Authentication failed" });
+        if (!decodedToken) {
+            return res.status(401).json({ message: "Invalid token" });
         }
+        const { username, role, name } = decodedToken;
         const access_token = getToken(username, name, role);
         const refresh_token = getToken(username, name, role, true);
+        
         res
             .cookie("access_token", access_token, {
                 httpOnly: true,
@@ -270,31 +277,34 @@ const refreshToken = async (req: Request, res: Response) => {
             })
             .status(200)
             .json({ message: "Token refreshed successfully" });
-        return res;
     } catch (error) {
+        console.log("refreshToken error", error);
         return res.status(401).json({ message: (error as Error).message });
     }
 };
 
 const googleLogin = async (googleUser: {name: string, email: string, picture: string, mobile: string}) => {
     try {
-        console.log("googleUser", googleUser);
         const user = await User.findOne({ email: googleUser.email });
-        console.log("user", user);
         if (user) return {access_token: getToken(user.username, user.name, user.role), refresh_token: getToken(user.username, user.name, user.role, true)};
         const hashedPassword = await bcrypt.hash(uuidv4.toString(), 10);
+        const username = googleUser.email.split("@")[0]+Math.random().toString(36).substring(2, 15);
         const newUser = new User({
+            username,
             email: googleUser.email,
             password: hashedPassword,
             name: googleUser.name,
             mobile: googleUser.mobile??"",
             institute: "Not given",
             image: googleUser.picture,
+            memberSince: new Date().toISOString(),
+            role: "user",
+            emailVerified: true,
         });
         await newUser.save();
         return {access_token: getToken(newUser.username, newUser.name, newUser.role), refresh_token: getToken(newUser.username, newUser.name, newUser.role, true)};
     } catch (error) {
-        console.error(error);
+        console.log("googleLogin error", error);
         return {access: "", refresh: ""};
     }
 };

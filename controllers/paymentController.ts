@@ -41,8 +41,10 @@ export const verifyPayment = async (razorpay_order_id: string, razorpay_payment_
             const payment = await razorpayInstance.payments.fetch(razorpay_payment_id)
             return payment
         }
+        return undefined
     } catch (error) {
         console.error("Verification error:", error)
+        return undefined
     }
 }
 

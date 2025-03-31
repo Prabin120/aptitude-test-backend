@@ -10,11 +10,17 @@ import aptitudeRouter from './routes/aptitudeRoute';
 import groupTestRouter from './routes/groupTestRoute';
 import slowDown from 'express-slow-down';
 import { initialLogging, errorLogging } from './middlewares/logging';
+import { connectRedis } from './utils/redis';
 
 const app = express();
-const PORT = process.env.PORT
+const PORT = process.env.PORT;
 process.env.TZ = 'UTC';
 app.set('trust proxy', 1); // Trust the first proxy
+
+// Initialize Redis connection
+connectRedis().catch(err => {
+    console.error('Failed to connect to Redis:', err);
+});
 
 //Connecting to mongoDB
 connectMongoDb()
@@ -52,6 +58,11 @@ app.use('/p/api/v1/group-test', groupTestRouter);
 
 app.use(errorLogging);
 
-app.listen(PORT, ()=>{
-    console.log(`Server started at port ${PORT}`);
-})
+// Only start the server if we're not in a test environment
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`Server started at port ${PORT}`);
+    });
+}
+
+export default app;

@@ -65,7 +65,7 @@ const verifyGroupTestPayment = async (req: ICustomRequest, res:Response) =>{
             return res.status(400).json({message: "Something went wrong"})
         }
         groupTest.paid = true;
-        groupTest.save();
+        await groupTest.save();
         sendGroupTestMail(groupTest.participants, groupTest._id);
         return res.status(200).json({message: "Registration successfull"})
     } catch (error) {

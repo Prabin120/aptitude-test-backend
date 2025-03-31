@@ -8,7 +8,13 @@ import dns from 'dns/promises';
 dotenv.config();
 const CLIENT_DOMAIN_URL = process.env.CLIENT_DOMAIN_URL as string;
 
-const emailQueue = new Queue('emails');
+// Create a shared queue instance
+const emailQueue = new Queue('emails', {
+    redis: {
+        port: 6379,
+        host: 'localhost'
+    }
+});
 
 // Validate email format and domain existence
 async function validateEmail(email: string): Promise<boolean> {
@@ -24,6 +30,7 @@ async function validateEmail(email: string): Promise<boolean> {
         return false;
     }
 }
+
 // Process emails from the queue
 emailQueue.process(async (job) => {
     const { testId, to, subject, html, resend } = job.data;
@@ -59,12 +66,7 @@ export function sendGroupTestMail(recipients: string[], testId: string, resend =
             console.error(`Error adding job for ${recipient}:`, err);
         });
     });
-
-    emailQueue.on('failed', (job, err) => {
-        console.error(`Job failed for email: ${job.data.to}`, err);
-    });
-
-    emailQueue.on('completed', (job) => {
-        console.log(`Job completed for email: ${job.data.to}`);
-    });
 }
+
+// Export the queue instance for cleanup
+export { emailQueue };
