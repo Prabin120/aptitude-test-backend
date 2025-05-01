@@ -92,8 +92,99 @@ const sendMailFeedbackResponse = async (
     }
 };
 
+const requestingForCreatorAccess = async (receipantMailId: string, username: string) => {
+    if (!receipantMailId) {
+        return false;
+    }
+    try {
+        mailOptions.to = process.env.PERSONAL_EMAIL_ID;
+        mailOptions.subject = "Request for Creator Access";
+        mailOptions.html = `
+            Mail from ${receipantMailId}
+            Username: ${username}
+        `;
+        const info = await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.log(error);
+        return false;
+    }
+};
+
+const sentEmailVerificationMail = async (name: string, receipantMailId: string, link: string) => {
+    if (!receipantMailId) {
+        return false;
+    }
+    try {
+        mailOptions.to = receipantMailId;
+        mailOptions.subject = "Email Verification";
+        mailOptions.html = `
+            <h1>Hello ${name},</h1>
+            <p>Click on the link to verify your email address:</p>
+            <a href="${link}">Verify Email</a>
+        `;
+        const info = await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.log(error);
+        return false;
+    }
+};
+
+const sendQuestionApprovedMail = async (receipantName: string, receipantMailId: string, questionNo: number, questionTitle: string) => {
+    if (!receipantMailId) {
+        return false;
+    }
+    try {
+        mailOptions.to = receipantMailId;
+        mailOptions.subject = "Question Approved";
+        mailOptions.html = `
+            Hi, ${receipantName},
+            Your question has been approved and live now. Your coins will be added to your wallet soon.
+
+            Question No: ${questionNo}
+            Question Title: ${questionTitle}
+        `;
+        const info = await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.log(error);
+        return false;
+    }
+}
+
+const sendQuestionRejectedMail = async (receipantName: string, receipantMailId: string, questionNo: number, questionTitle: string, feedback: string) => {
+    if (!receipantMailId) {
+        return false;
+    }
+    try {
+        mailOptions.to = receipantMailId;
+        mailOptions.subject = "Question Rejected";
+        mailOptions.html = `
+            Hi, ${receipantName},
+            Your question has been rejected by our team.
+            Please follow the feedback and resend it again.
+            Feedback: 
+            ${feedback}
+
+
+            Question No: ${questionNo}
+            Question Title: ${questionTitle}
+        `;
+        const info = await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.log(error);
+        return false;
+    }
+}
+
 export {
     sendMailFeedbackResponse,
     sendMailGotFeedback,
     sendMailResetPasswordMail,
+    requestingForCreatorAccess,
+    sentEmailVerificationMail,
+    sendQuestionApprovedMail,
+    sendQuestionRejectedMail,
 };

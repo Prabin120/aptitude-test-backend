@@ -1,6 +1,7 @@
 import { Response } from "express";
 import ICustomRequest from "../utils/customRequest";
 import User from "../models/user";
+import { getCoins } from "./rewardsController";
 
 const profile = async(req:ICustomRequest, res:Response)=>{
 
@@ -16,7 +17,8 @@ const profile = async(req:ICustomRequest, res:Response)=>{
         if(!user){
             return res.status(400).json({message: "Username not found"});
         }
-        return res.status(200).json({data:user});
+        const coins = await getCoins(user.username);
+        return res.status(200).json({data:{...user.toJSON(), coins: coins?.balance??0}});
     } catch (error) {
         return res.status(500).json({message: "Server error"});
     }

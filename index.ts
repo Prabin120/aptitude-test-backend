@@ -8,6 +8,8 @@ import testRouter from './routes/testRoute';
 import feedbackRouter from './routes/feedbackRoute';
 import aptitudeRouter from './routes/aptitudeRoute';
 import groupTestRouter from './routes/groupTestRoute';
+import servicesRouter from './routes/servicesRoute';
+import rewardRouter from './routes/rewardRoute';
 import slowDown from 'express-slow-down';
 import { initialLogging, errorLogging } from './middlewares/logging';
 import { connectRedis } from './utils/redis';
@@ -55,6 +57,8 @@ app.use('/p/api/v1/test', testRouter);
 app.use('/p/api/v1/feedback', feedbackRouter);
 app.use('/p/api/v1/aptitude', aptitudeRouter);
 app.use('/p/api/v1/group-test', groupTestRouter);
+app.use('/p/api/v1/services', servicesRouter);
+app.use('/p/api/v1/reward', rewardRouter);
 
 app.use(errorLogging);
 

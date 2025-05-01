@@ -3,9 +3,11 @@ import User, { IUser } from "../models/user";
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import ICustomRequest from "../utils/customRequest";
-import { sendMailResetPasswordMail } from "../utils/mailService";
+import { requestingForCreatorAccess, sendMailResetPasswordMail, sentEmailVerificationMail } from "../utils/mailService";
 import { verifyToken } from "../middlewares/authMiddleware";
 import { v4 as uuidv4 } from 'uuid';
+import roles, { isCreator } from "../roles/roles";
+import { getCoins, getCoinsData } from "./rewardsController";
 
 const JWT_ACCESS_SECRET_KEY = process.env.JWT_ACCESS_SECRET_KEY as string;
 const JWT_ACCESS_EXPIRY_TIME =
@@ -49,7 +51,8 @@ const generateToken = (
     res: Response,
     user: IUser,
     status: number,
-    message: string
+    message: string,
+    coins: number,
 ) => {
     const access_token = getToken(user.username, user.name, user.role);
     const refresh_token = getToken(user.username, user.name, user.role, true);
@@ -70,8 +73,8 @@ const generateToken = (
             data: {
                 name: user.name,
                 email: user.email,
-                mobile: user.mobile,
                 username: user.username,
+                coins: coins,
             },
         });
 };
@@ -108,7 +111,8 @@ const signUp = async (req: ICustomRequest, res: Response) => {
             memberSince: new Date().toISOString(),
         });
         await newUser.save();
-        return generateToken(res, newUser, 201, "User created successfully");
+        const coins = await getCoins(username);
+        return generateToken(res, newUser, 201, "User created successfully", coins?.balance ?? 0);
     } catch (error) {
         console.log("signup error", error);
         return res.status(500).json({ message: "Server error" });
@@ -126,7 +130,8 @@ const login = async (req: ICustomRequest, res: Response) => {
         if (!isPasswordValid) {
             return res.status(400).json({ message: "Invalid email or password" });
         }
-        return generateToken(res, user, 200, "Login successful");
+        const coins = await getCoins(user.username);
+        return generateToken(res, user, 200, "Login successful", coins?.balance ?? 0);
     } catch (error) {
         console.log("login error", error);
         return res.status(500).json({ message: "Server error" });
@@ -150,7 +155,8 @@ const changePassword = async (req: ICustomRequest, res: Response) => {
         }
         user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
-        return generateToken(res, user, 200, "Password changed successful");
+        const coins = await getCoins(user.username);
+        return generateToken(res, user, 200, "Password changed successful", coins?.balance ?? 0);
     } catch (error) {
         console.log("changePassword error", error);
         return res.status(500).json({ message: "Server error" });
@@ -311,6 +317,88 @@ const googleLogin = async (googleUser: {name: string, email: string, picture: st
 
 const googleCallback = async (req: Request, res: Response) => { };
 
+const accessForCreator = async (req: ICustomRequest, res: Response) => {
+    const username = req.username;
+    if (!username) {
+        return res.status(401).json({ message: "Authentication failed" });
+    }
+    const user = await User.findOne({ username });
+    if (!user) {
+        return res.status(401).json({ message: "Authentication failed" });
+    }
+    if(isCreator(user.role)){
+        return res.status(200).json({ message: "You aleady have the access" });
+    }
+    if(!user.email || !user.mobile || !user.emailVerified || !user.institute){
+        return res.status(400).json({ message: "Please complete your profile, email, mobile, institute and vefiy your email" });
+    }
+    user.role = "creator";
+    await user.save();
+    await requestingForCreatorAccess(user.email, user.username);
+    const access_token = getToken(username, user.name, user.role);
+    const refresh_token = getToken(username, user.name, user.role, true);
+    
+    return res
+        .cookie("access_token", access_token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+        })
+        .cookie("refresh_token", refresh_token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+        })
+        .status(200)
+        .json({ message: "Access granted" });
+}
+
+const emailVerificationLink = async (req: ICustomRequest, res: Response) => {
+    const username = req.username;
+    if (!username) {
+        return res.status(401).json({ message: "Authentication failed" });
+    }
+    const user = await User.findOne({ username });
+    if (!user) {
+        return res.status(401).json({ message: "Authentication failed" });
+    }
+    const token = jwt.sign({ username, type: "emailVerification", email:user.email }, JWT_ACCESS_SECRET_KEY, {
+        expiresIn: "2d",
+    });
+    const link = `${CLIENT_DOMAIN_URL}/verification/?type=Email&token=${token}`;
+    await sentEmailVerificationMail(user.name, user.email, link);
+    return res.status(200).json({ message: "Verification link sent to your email" });
+}
+
+const verifyEmailLink = async (req: ICustomRequest, res: Response) => {
+    const username = req.username;
+    if (!username) {
+        return res.status(401).json({ message: "Authentication failed" });
+    }
+    const { token } = req.body;
+    if (!token) {
+        return res.status(400).json({ message: "Invalid request" });
+    }
+    const decodedToken = jwt.verify(token as string, JWT_ACCESS_SECRET_KEY) as {
+        username: string;
+        type: string;
+        email: string;
+    };
+    if (decodedToken.type !== "emailVerification" || decodedToken.username !== username) {
+        return res.status(400).json({ message: "Invalid request" });
+    }
+    const user = await User.findOne({ email: decodedToken.email });
+    if (!user) {
+        return res.status(400).json({ message: "Invalid request" });
+    }
+    if (user.emailVerified) {
+        return res.status(200).json({ message: "Email already verified" });
+    }
+    user.emailVerified = true;
+    await user.save();
+    return res.status(200).json({ message: "Email verified successfully" });
+}
+
 export {
     signUp,
     login,
@@ -322,4 +410,7 @@ export {
     refreshToken,
     googleLogin,
     googleCallback,
+    accessForCreator,
+    emailVerificationLink,
+    verifyEmailLink,
 };

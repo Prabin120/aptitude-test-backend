@@ -3,6 +3,7 @@ import User from '../models/user';
 import dotenv from 'dotenv';
 import { Response, NextFunction } from 'express';
 import ICustomRequest from '../utils/customRequest';
+import { isAdmin, isCreator, isValidator } from '../roles/roles';
 
 dotenv.config();
 const JWT_ACCESS_SECRET_KEY = process.env.JWT_ACCESS_SECRET_KEY as string;
@@ -78,7 +79,7 @@ const adminAuthentication = async (req: ICustomRequest, res: Response, next: Nex
         }
         
         const role = decodedToken.role;
-        if (role !== "admin") {
+        if (!isAdmin(role)) {
             res.status(400).json({ message: "Only admin can use the calls" });
             return;
         }
@@ -92,4 +93,57 @@ const adminAuthentication = async (req: ICustomRequest, res: Response, next: Nex
     }
 };
 
-export { authenticate, adminAuthentication, verifyToken, authenticateWithoutReturn };
+const creatorAccess = async (req: ICustomRequest, res: Response, next: NextFunction): Promise<void> => {
+    const token = req.cookies.access_token;    
+    if (!token) {
+        res.status(401).json({ message: 'Authentication required' });
+        return;
+    }
+    try {
+        const decodedToken = verifyToken(token);
+        if (!decodedToken) {
+            res.status(401).json({ message: 'Authentication failed' });
+            return;
+        }
+        const role = decodedToken.role;
+        if (!isCreator(role)) {
+            res.status(400).json({ message: "Only creator can use the calls" });
+            return;
+        }
+        req.username = decodedToken.username;
+        next();
+    } catch (error) {
+        console.error(error);
+        res.status(401).json({ message: (error as Error).message });
+        return;
+    }
+};
+
+const validatorAccess = async (req: ICustomRequest, res: Response, next: NextFunction): Promise<void> => {
+    const token = req.cookies.access_token;    
+    if (!token) {
+        res.status(401).json({ message: 'Authentication required' });
+        return;
+    }
+    try {
+        const decodedToken = verifyToken(token);
+        if (!decodedToken) {
+            res.status(401).json({ message: 'Authentication failed' });
+            return;
+        }
+        const role = decodedToken.role;
+        if (!isValidator(role)) {
+            res.status(400).json({ message: "Only admin or validator can use the calls" });
+            return;
+        }
+        req.username = decodedToken.username;
+        next();
+    } catch (error) {
+        console.error(error);
+        res.status(401).json({ message: (error as Error).message });
+        return;
+    }
+};
+
+export { authenticate, adminAuthentication, verifyToken, authenticateWithoutReturn, 
+    creatorAccess, validatorAccess };

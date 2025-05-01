@@ -9,7 +9,7 @@ export interface IUser{
     password: string;
     institute?: string;
     mobile: string;
-    role: 'user' | 'admin';
+    role: string;
     image: string;
     bio?: string;
     memberSince?: string;
@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema<IUser>({
     password: { type: String, required: true },
     mobile: { type: String },
     institute: { type: String },
-    role: { type: String, enum:['user', 'admin'], default: 'user' },
+    role: { type: String, default: 'user' },
     image: { type: String },
     bio: { type: String },
     memberSince: { type: String },
@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema<IUser>({
     github: { type: String },
     twitter: { type: String },
     website: { type: String },
-    emailVerified: { type: Boolean, default: false }
+    emailVerified: { type: Boolean, default: false },
 }, {timestamps: true});
 
 const User = mongoose.model<IUser>('User', userSchema);
