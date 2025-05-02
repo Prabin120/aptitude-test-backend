@@ -13,7 +13,7 @@ const getHistory = async (username: string, page: number, type?: string) => {
     try {
         const limit = 5;
         const skip = (Number(page) - 1) * limit;
-        const filter: any = { user: username };
+        const filter: any = { username: username };
         if (type && ['withdrawal', 'earning'].includes(type)) {
             filter.type = type;
         }
@@ -45,8 +45,9 @@ export const getDashboard = async(req: ICustomRequest, res: Response) => {
         if(!username){
             return res.status(400).json({ message: "User not found" });
         }
+        let {filter} = req.query;
         const coins = await getCoins(username);
-        const history = await getHistory(username, 1);
+        const history = await getHistory(username, 1, String(filter));
         return res.status(200).json({ coins, history });
     } catch (error) {
         return res.status(500).json({ message: "Server error" });
