@@ -14,7 +14,7 @@ const coinTransactionSchema = new mongoose.Schema<ICoinTransaction>({
     _id: {type: String, default: uuidv4},
     username: {type: String, index: true, required: true},
     amount: {type: Number, required: true},
-    status: {type: String, required: true},
+    status: {type: String, required: true, default: 'success'},
     type: {type: String, required: true},
     description: {type: String, required: true},
 }, {timestamps: true});

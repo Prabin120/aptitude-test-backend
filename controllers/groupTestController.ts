@@ -12,9 +12,13 @@ import { REDIS_EXPIRY } from "../consts";
 import client from "../utils/redis";
 import { ITest } from "../models/tests";
 import { clearCache } from "../middlewares/cache";
+import { getCoins, removeCoins } from "./rewardsController";
 
 const createGroupTest = async (req: ICustomRequest, res: Response) => {
     const username = req.username;
+    if(!username){
+        return res.status(400).json({message: "User not found"})
+    }
     try {
         const data = req.body;
         if (!data.title || !data.description || !data.duration || !data.participants || !data.totalParticipants) {
@@ -28,48 +32,23 @@ const createGroupTest = async (req: ICustomRequest, res: Response) => {
         if(participants.length > totalParticipants){
             return res.status(400).json({message: "Number of Participants entered should be equal or less than Participants No"})
         }
-        const options = {
-            amount: totalParticipants * 20 * 100,
-            currency: "INR",
-            receipt: `order_${Date.now()}`,
+        const amount = totalParticipants * 20;
+        const availableCoins = await getCoins(username);
+        if (!availableCoins || availableCoins.balance < amount) {
+            return res.status(400).json({ message: "Insufficient coins" });
         }
-        const orderId = await createOrder(options)
+        const orderId = await removeCoins(username, amount, "Group Test");
+        if (!orderId) {
+            return res.status(400).json({ message: "Payment failed" });
+        }
         const startDateTime = new Date(data.startDateTime);
         const endDateTime = startDateTime.getTime() + data.duration * 1000 * 60;
-        await GroupTest.create({ ...data, amount: options.amount, totalParticipants, participants, orderId: orderId, paid: false, organizer: username, startDateTime, endDateTime });
-        return res.status(200).json({
-            success: true,
-            msg: "Order Created",
-            order_id: orderId,
-            amount: options.amount,
-            product_name: "AptiCode",
-        })
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Server error" });
-    }
-}
-
-const verifyGroupTestPayment = async (req: ICustomRequest, res:Response) =>{
-    const username = req.username;
-    try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body
-        const payment = await verifyPayment(razorpay_order_id, razorpay_payment_id, razorpay_signature)
-        if (payment === undefined){
-            return res.status(400).json({status: "failed", error: "Payment verification failed"})
-        }
-        await Payment.create({ user: username, paymentId: razorpay_payment_id, paymentMethod: "razorpay", amount: payment.amount, 
-            paymentObject: payment, description: payment.description })
-        const groupTest = await GroupTest.findOne({orderId: orderId, organizer: username})
-        if(!groupTest){
-            return res.status(400).json({message: "Something went wrong"})
-        }
-        groupTest.paid = true;
-        await groupTest.save();
+        const groupTest = await GroupTest.create({ ...data, amount: amount, totalParticipants, participants, orderId: orderId, paid: true, organizer: username, startDateTime, endDateTime });
         sendGroupTestMail(groupTest.participants, groupTest._id);
         return res.status(200).json({message: "Registration successfull"})
     } catch (error) {
-        return res.status(400).json({message: "Server error"})
+        console.log(error);
+        return res.status(500).json({ message: "Server error" });
     }
 }
 
@@ -277,14 +256,14 @@ const editEmail = async (req: ICustomRequest, res: Response) => {
         if (isEmailExist) {
             return res.status(400).json({ message: "Email already exist" });
         }
-        const emailStatus = await GroupTestMailStatus.findOne(_id);
+        const emailStatus = await GroupTestMailStatus.findOne({ _id });
         if (!emailStatus || emailStatus.test !== testId) {
             return res.status(400).json({ message: "Invalid email" });
         }
         if(emailStatus.status === "sent"){
             return res.status(400).json({ message: "Email already sent, You can sent the link directly to the participants to register" });
         }
-        const oldEmail = emailStatus.email
+        const oldEmail = emailStatus.email;
         emailStatus.email = email;
         emailStatus.status = "pending";
         groupTest.participants.splice(groupTest.participants.indexOf(oldEmail), 1, email);
@@ -293,6 +272,7 @@ const editEmail = async (req: ICustomRequest, res: Response) => {
         sendGroupTestMail([email], groupTest._id, true);
         return res.status(200).json({ groupTest });
     } catch (error) {
+        console.error(error);
         return res.status(500).json({ message: "Server error" });
     }
 }
@@ -399,7 +379,7 @@ const submitTest = async(req:ICustomRequest, res:Response)=>{
     }
 }
 
-export {createGroupTest, verifyGroupTestPayment, getGroupTests, getGroupTestMailStatus, 
+export {createGroupTest, getGroupTests, getGroupTestMailStatus, 
     addPaticipants, getOwnedGroupTests, getDetailGroupTest, submitTest, examTestReport,
     resendMail, modifyGroupTest, editEmail, getSingleTest, markCalculations
 }

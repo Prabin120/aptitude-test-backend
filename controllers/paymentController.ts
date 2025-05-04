@@ -38,8 +38,11 @@ export const verifyPayment = async (razorpay_order_id: string, razorpay_payment_
             .digest("hex")
 
         if (expectedSignature === razorpay_signature) {
-            const payment = await razorpayInstance.payments.fetch(razorpay_payment_id)
-            return payment
+            const payment = await razorpayInstance.payments.fetch(razorpay_payment_id);
+            if (payment.status !== 'captured') {
+                return undefined;
+            }
+            return payment;
         }
         return undefined
     } catch (error) {
@@ -47,4 +50,3 @@ export const verifyPayment = async (razorpay_order_id: string, razorpay_payment_
         return undefined
     }
 }
-
