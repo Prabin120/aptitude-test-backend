@@ -51,6 +51,7 @@ export const addCoins = async(username: string, coins: number, description: stri
             await Coin.create({ username, balance: coins, lifetimeEarnings: coins, totalWithdraw: 0 });
         }
         const order = await CoinTransaction.create({ username, amount: coins, type: "earning", description });
+        await Coin.findOneAndUpdate({ username: "Pr5574" }, { $inc: { balance: -coins } });
         return order.id
     } catch (error) {
         console.log(error);
@@ -65,6 +66,7 @@ export const removeCoins = async(username: string, coins: number, description: s
             coin.balance -= coins;
             await coin.save();
             const order = await CoinTransaction.create({ username, amount: coins, type: "withdrawal", description: description });
+            await Coin.findOneAndUpdate({ username: "Pr5574" }, { $inc: { balance: coins } });
             return order.id
         }
         return null
