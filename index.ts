@@ -29,8 +29,8 @@ connectMongoDb()
 
 //Middlewares
 app.use(cors({
-    origin: [process.env.CLIENT_DOMAIN_URL as string, process.env.CLIENT_DOMAIN_URL_2 as string, process.env.CLIENT_DOMAIN_URL_3 as string??""],
-    methods: ["GET","POST","DELETE","PUT"],
+    origin: [process.env.CLIENT_DOMAIN_URL as string, process.env.CLIENT_DOMAIN_URL_2 as string, process.env.CLIENT_DOMAIN_URL_3 as string ?? ""],
+    methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
 }))
 
@@ -47,8 +47,8 @@ app.use(express.json())
 app.use(cookieParser());
 
 // Routes
-app.get('/p/health',(req,res)=>{
-    res.status(200).json({message: "Server is up and running"});
+app.get('/p/health', (req, res) => {
+    res.status(200).json({ message: "Server is up and running" });
 })
 
 app.use('/p/api/v1/auth', authRouter);

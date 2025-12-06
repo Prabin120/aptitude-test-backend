@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "nodemon --legacy-watch --exec ts-node index.ts",
+    "dev": "npx nodemon --legacy-watch --exec ts-node index.ts",
     "start": "node /app/dist/index.js",
     "test": "jest --detectOpenHandles"
   },

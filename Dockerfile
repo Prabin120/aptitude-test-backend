@@ -1,4 +1,4 @@
-# Stage 1: Build the application
+# Stage 1: Build the application (only for production)
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -13,7 +13,7 @@ RUN npm install --production=false
 COPY . .
 RUN npm run build
 
-# Stage 2: Production runtime image
+# Stage 2: Runtime image
 FROM node:18-alpine
 
 # Install Redis in the final image
@@ -26,15 +26,26 @@ WORKDIR /app
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
-# Copy only production dependencies
+# Copy package files
 COPY package*.json ./
-RUN npm install --production
 
-# Copy the built application from the builder stage
+# Install dependencies based on environment
+RUN if [ "$NODE_ENV" = "production" ]; then \
+      npm install --production; \
+    else \
+      npm install; \
+    fi
+
+# Copy the built application from the builder stage (for production)
 COPY --from=builder /app/dist ./dist
 
-# Expose the application port (if applicable)
+# Copy source files for development mode
+COPY . .
+
+# Expose the application port
 EXPOSE 8000
 
 # Start Redis and the Node.js application
-CMD ["sh", "-c", "redis-server --daemonize yes && npm run start"]
+# In development, npm run dev will use ts-node with the mounted source
+# In production, npm run start will use the built dist files
+CMD ["sh", "-c", "redis-server --daemonize yes && if [ \"$NODE_ENV\" = \"development\" ]; then npm run dev; else npm run start; fi"]
