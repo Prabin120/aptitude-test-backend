@@ -1,0 +1,29 @@
+# Stage 1: Build
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --production=false
+
+COPY . .
+RUN npm run build
+
+# Stage 2: Runtime
+FROM node:18-alpine
+
+RUN apk add --no-cache redis
+
+WORKDIR /app
+
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+COPY package*.json ./
+RUN npm install --production
+
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 8000
+
+CMD ["sh", "-c", "redis-server --daemonize yes && node dist/index.js"]
