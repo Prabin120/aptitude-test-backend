@@ -1,11 +1,16 @@
 {
-    "compilerOptions": {
-      "outDir": "./dist", 
-      "target": "es6",
-      "module": "commonjs",
-      "strict": true,
-      "esModuleInterop": true,
-    },
-    "include": ["*.ts"], // Include all TypeScript files in src
-    "exclude": ["node_modules"] // Exclude node_modules
+  "compilerOptions": {
+    "outDir": "./dist",
+    "target": "es6",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "*.ts"
+  ], // Include all TypeScript files in src
+  "exclude": [
+    "node_modules"
+  ] // Exclude node_modules
 }
