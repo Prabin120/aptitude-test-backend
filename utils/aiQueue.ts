@@ -13,16 +13,16 @@ const aiLogQueue = new Queue('ai-logs', {
 
 // Process the queue
 aiLogQueue.process(async (job) => {
-    const { username, prompt, response } = job.data;
+    const { username, prompt, response, apiKey } = job.data;
     try {
-        await AiCall.create({ username, prompt, response });
+        await AiCall.create({ username, prompt, response, apiKey });
     } catch (error) {
         console.error("Failed to log AI call:", error);
     }
 });
 
 // Helper to add jobs
-export const addAiLogJob = (data: { username: string, prompt: string, response: string }) => {
+export const addAiLogJob = (data: { username: string, prompt: string, response: string, apiKey: string }) => {
     aiLogQueue.add(data, {
         attempts: 3,
         backoff: {

@@ -7,6 +7,7 @@ const aiCallSchema = new mongoose.Schema({
     username: { type: String, index: true, required: true },
     prompt: { type: String, required: true },
     response: { type: String, required: true },
+    apiKey: { type: String, required: false },
 }, { timestamps: true })
 
 const AiCall = mongoose.model('AiCall', aiCallSchema)

@@ -6,15 +6,15 @@ import ICustomRequest from "../utils/customRequest";
 import AiCallCount from "../models/aiCallCount";
 import { addAiLogJob } from "../utils/aiQueue";
 
-const AI = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_API_KEY,
+const AI = (apiKey?: string) => new GoogleGenAI({
+    apiKey: apiKey || process.env.GOOGLE_API_KEY,
 });
 
 const maxAiCalls = parseInt(process.env.MAX_AI_CALLS || "5");
 
-async function runModel(prompt: string, model: string = "gemini-2.5-flash") {
+async function runModel(prompt: string, apiKey?: string, model: string = "gemini-2.5-flash") {
     try {
-        const response = await AI.models.generateContent({
+        const response = await AI(apiKey).models.generateContent({
             model: model,
             contents: [
                 {
@@ -57,33 +57,40 @@ const checkAiLimit = async (username: string) => {
     return { allowed: true, aiCallCount };
 }
 
+const getGenerateCodePrompt = async (language: string, prompt: string) => {
+    const promptPath = path.join(__dirname, "../prompts/generateCode.txt");
+    const promptText = await fs.readFile(promptPath, "utf-8");
+    return promptText.replace("{language}", language).replace("{prompt}", prompt);
+}
+
+const getImproveCodePrompt = async (code: string) => {
+    const promptPath = path.join(__dirname, "../prompts/improveCode.txt");
+    const promptText = await fs.readFile(promptPath, "utf-8");
+    return promptText.replace("{code}", code);
+}
+
 export const aiGenerateCode = async (req: ICustomRequest, res: Response) => {
-    const { language, prompt } = req.body;
+    const { language, prompt, apiKey } = req.body;
     const user = req.username;
     if (!user) {
         return res.status(401).json({ message: "Unauthorized" });
     }
-
     try {
-        const { allowed, aiCallCount } = await checkAiLimit(user);
-        if (!allowed) {
-            return res.status(405).json({ message: "No calls left for today" });
+        let aiCall;
+        if (!apiKey) {
+            const { allowed, aiCallCount } = await checkAiLimit(user);
+            aiCall = aiCallCount;
+            if (!allowed) {
+                return res.status(405).json({ message: "No calls left for today" });
+            }
         }
-
-        const promptPath = path.join(__dirname, "../prompts/generateCode.txt");
-        const promptText = await fs.readFile(promptPath, "utf-8");
-        const finalPrompt = promptText.replace("{language}", language).replace("{prompt}", prompt);
-
-        const response = await runModel(finalPrompt);
-
-        // Deduct credit only on success
-        if (aiCallCount) {
-            aiCallCount.count -= 1;
-            await aiCallCount.save();
+        const finalPrompt = await getGenerateCodePrompt(language, prompt);
+        const response = await runModel(finalPrompt, apiKey);
+        if (!apiKey && aiCall) {
+            aiCall.count -= 1;
+            await aiCall.save();
         }
-
-        addAiLogJob({ username: user, prompt: finalPrompt, response });
-
+        addAiLogJob({ username: user, prompt: finalPrompt, response, apiKey });
         return res.status(200).json({ response });
     } catch (error) {
         console.error(error);
@@ -92,32 +99,28 @@ export const aiGenerateCode = async (req: ICustomRequest, res: Response) => {
 }
 
 export const aiImproveCode = async (req: ICustomRequest, res: Response) => {
-    const { code } = req.body;
+    const { code, apiKey } = req.body;
     const user = req.username;
     if (!user) {
         return res.status(401).json({ message: "Unauthorized" });
     }
 
     try {
-        const { allowed, aiCallCount } = await checkAiLimit(user);
-        if (!allowed) {
-            return res.status(405).json({ message: "No calls left for today" });
+        let aiCall;
+        if (!apiKey) {
+            const { allowed, aiCallCount } = await checkAiLimit(user);
+            aiCall = aiCallCount;
+            if (!allowed) {
+                return res.status(405).json({ message: "No calls left for today" });
+            }
         }
-
-        const promptPath = path.join(__dirname, "../prompts/codeImprovement.txt");
-        const promptText = await fs.readFile(promptPath, "utf-8");
-        const finalPrompt = promptText.replace("{code}", code);
-
-        const response = await runModel(finalPrompt);
-
-        // Deduct credit only on success
-        if (aiCallCount) {
-            aiCallCount.count -= 1;
-            await aiCallCount.save();
+        const finalPrompt = await getImproveCodePrompt(code);
+        const response = await runModel(finalPrompt, apiKey);
+        if (!apiKey && aiCall) {
+            aiCall.count -= 1;
+            await aiCall.save();
         }
-
-        addAiLogJob({ username: user, prompt: finalPrompt, response });
-
+        addAiLogJob({ username: user, prompt: finalPrompt, response, apiKey });
         return res.status(200).json({ response });
     } catch (error) {
         console.error(error);
