@@ -22,7 +22,7 @@ aiLogQueue.process(async (job) => {
 });
 
 // Helper to add jobs
-export const addAiLogJob = (data: { username: string, prompt: string, response: string, apiKey: string }) => {
+export const addAiLogJob = (data: { username: string, prompt: string, response: string, apiKey?: string }) => {
     aiLogQueue.add(data, {
         attempts: 3,
         backoff: {
