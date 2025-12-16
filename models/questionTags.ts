@@ -3,12 +3,14 @@ import mongoose from "mongoose";
 interface ITypes {
     value: string;
     summary: string;
+    slug: string;
 }
 
 const aptiQuestionCategoriesSchema = new mongoose.Schema<ITypes>(
     {
         value: { type: String, required: true, index: true, unique: true }, //ref to question model
         summary: { type: String, required: true },
+        slug: { type: String, required: true, unique: true, index: true },
     },
     { timestamps: true }
 );
@@ -21,6 +23,7 @@ const aptiQuestionTopicsSchema = new mongoose.Schema<ITypes>(
     {
         value: { type: String, required: true, index: true, unique: true }, //ref to question model
         summary: { type: String, required: true },
+        slug: { type: String, required: true, unique: true, index: true },
     },
     { timestamps: true }
 );
@@ -33,6 +36,7 @@ const aptiQuestionCompaniesSchema = new mongoose.Schema<ITypes>(
     {
         value: { type: String, required: true, index: true, unique: true }, //ref to question model
         summary: { type: String, required: true },
+        slug: { type: String, required: true, unique: true, index: true },
     },
     { timestamps: true }
 );

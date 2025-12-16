@@ -3,6 +3,7 @@ import ICustomRequest from "../utils/customRequest";
 import Question from "../models/questions";
 import { REDIS_EXPIRY } from "../consts";
 import client from "../utils/redis";
+import slugify from "slugify";
 
 const getQuestion = async (req: ICustomRequest, res: Response) => {
 	const key = req.originalUrl;
@@ -25,7 +26,7 @@ const getQuestion = async (req: ICustomRequest, res: Response) => {
 		}).select("slug");
 		const nextQuestionSlug = nextQuestion ? nextQuestion.slug : null;
 		const prevQuestionSlug = prevQuestion ? prevQuestion.slug : null;
-		await client.set(key, JSON.stringify({ question, nextQuestionSlug, prevQuestionSlug }), {EX: REDIS_EXPIRY});
+		await client.set(key, JSON.stringify({ question, nextQuestionSlug, prevQuestionSlug }), { EX: REDIS_EXPIRY });
 		return res
 			.status(200)
 			.json({ question, nextQuestionSlug, prevQuestionSlug });
@@ -39,25 +40,24 @@ const getAllQuestion = async (req: ICustomRequest, res: Response) => {
 	try {
 		const key = req.originalUrl;
 		const page = Number(req.query?.page) || 1;
-		const limit = Number(process.env.PAGE_LIMIT) || 10;
 		const search = req.query?.search;
-		const skip = (page - 1) * limit; // Calculate skip value
+		const skip = (page - 1) * 10; // Calculate skip value
 		const filter = search ? { title: { $regex: search, $options: "i" } } : {};
 		const questions = await Question.find(filter)
 			.select("questionNo title type marks slug")
 			.skip(skip) // Use skip for pagination
-			.limit(limit) // Limit the number of results
+			.limit(10) // Limit the number of results
 			.sort({ questionNo: 1 });
 
 		const totalQuestions = await Question.countDocuments(filter); // Get total questions count
-		const totalPages = Math.ceil(totalQuestions / limit); // Calculate total pages
+		const totalPages = Math.ceil(totalQuestions / 10); // Calculate total pages
 
 		if (!questions.length) {
 			return res
 				.status(404)
 				.json({ data: [], totalPages, message: "No questions found" });
 		}
-		await client.set(key, JSON.stringify({ data: questions, totalPages }), {EX: REDIS_EXPIRY});
+		await client.set(key, JSON.stringify({ data: questions, totalPages }), { EX: REDIS_EXPIRY });
 		return res.status(200).json({ data: questions, totalPages });
 	} catch (error) {
 		console.error("Error fetching paginated questions:", error);
@@ -78,7 +78,7 @@ const getQuestionById = async (req: ICustomRequest, res: Response) => {
 		if (!question) {
 			return res.status(404).json({ message: "Question not found" });
 		}
-		await client.set(key, JSON.stringify(question), {EX: REDIS_EXPIRY});
+		await client.set(key, JSON.stringify(question), { EX: REDIS_EXPIRY });
 		return res.status(200).json(question);
 	} catch (error) {
 		return res.status(500).json({ message: error });
@@ -93,15 +93,15 @@ const getQuestionByCategoty = async (req: ICustomRequest, res: Response) => {
 		const skip = (page - 1) * limit; // Calculate skip value
 
 		const { category } = req.params;
-		const categoryString = category.split("%20").join(" ");
-		const questions = await Question.find({ categories: categoryString },
+		const categorySlug = slugify(decodeURIComponent(category), { lower: true, strict: true });
+		const questions = await Question.find({ categories: { $regex: new RegExp(`^${categorySlug}$`, "i") } },
 			"questionNo slug title type marks answers options"
-			)
+		)
 			.skip(skip)
 			.limit(limit > 30 ? 30 : limit);
 
 		const totalQuestions = await Question.countDocuments({
-			categories: categoryString,
+			categories: { $regex: new RegExp(`^${categorySlug}$`, "i") },
 		}); // Get total questions count
 		const totalPages = Math.ceil(totalQuestions / limit);
 		if (!questions.length) {
@@ -109,7 +109,7 @@ const getQuestionByCategoty = async (req: ICustomRequest, res: Response) => {
 				.status(404)
 				.json({ data: [], totalPages, message: "No questions found" });
 		}
-		await client.set(key, JSON.stringify({ data: questions, totalPages }), {EX: REDIS_EXPIRY});
+		await client.set(key, JSON.stringify({ data: questions, totalPages }), { EX: REDIS_EXPIRY });
 		return res.status(200).json({ data: questions, totalPages });
 	} catch (error) {
 		console.error("Error fetching paginated questions by category:", error);
@@ -121,18 +121,18 @@ const getQuestionByTopic = async (req: ICustomRequest, res: Response) => {
 	try {
 		const key = req.originalUrl;
 		const { topic } = req.params;
-		const topicString = topic.split("%20").join(" ");
+		const topicSlug = slugify(decodeURIComponent(topic), { lower: true, strict: true });
 		const page = Number(req.query?.page) || 1;
 		const limit = Number(req.query?.limit) || 10;
 		const skip = (page - 1) * limit; // Calculate skip value
 		// const skip = (page - 1) * limit;
-		const questions = await Question.find({ topics: topicString },
+		const questions = await Question.find({ topics: { $regex: new RegExp(`^${topicSlug}$`, "i") } },
 			"questionNo slug title type marks answers options"
-			)
+		)
 			.skip(skip)
 			.limit(limit > 30 ? 30 : limit);
 		const totalQuestions = await Question.countDocuments({
-			topics: topicString,
+			topics: { $regex: new RegExp(`^${topicSlug}$`, "i") },
 		}); // Get total questions count
 		const totalPages = Math.ceil(totalQuestions / limit);
 		if (!questions.length) {
@@ -140,7 +140,7 @@ const getQuestionByTopic = async (req: ICustomRequest, res: Response) => {
 				.status(404)
 				.json({ data: [], totalPages, message: "No questions found" });
 		}
-		await client.set(key, JSON.stringify({ data: questions, totalPages }), {EX: REDIS_EXPIRY});
+		await client.set(key, JSON.stringify({ data: questions, totalPages }), { EX: REDIS_EXPIRY });
 		return res.status(200).json({ data: questions, totalPages });
 	} catch (error) {
 		console.error("Error fetching paginated questions by category:", error);
@@ -151,21 +151,18 @@ const getQuestionByTopic = async (req: ICustomRequest, res: Response) => {
 const getQuestionByCompany = async (req: ICustomRequest, res: Response) => {
 	const key = req.originalUrl;
 	const { company } = req.params;
-	const companyString = company.split("%20").join(" ");
+	const companySlug = slugify(decodeURIComponent(company), { lower: true, strict: true });
 	try {
 		const page = Number(req.query?.page) || 1;
-		const limit =
-			(Number(req.query?.limit) || 10) > 10
-				? 10
-				: Number(req.query?.limit) || 10;
+		const limit = Number(req.query?.limit) || 10;
 		const skip = (page - 1) * limit;
-		const questions = await Question.find({ companies: companyString },
+		const questions = await Question.find({ companies: { $regex: new RegExp(`^${companySlug}$`, "i") } },
 			"questionNo slug title type marks answers options"
-			)
+		)
 			.skip(skip)
 			.limit(limit > 30 ? 30 : limit);
 		const totalQuestions = await Question.countDocuments({
-			companies: companyString,
+			companies: { $regex: new RegExp(`^${companySlug}$`, "i") },
 		}); // Get total questions count
 		const totalPages = Math.ceil(totalQuestions / limit);
 		if (!questions.length) {
@@ -173,7 +170,7 @@ const getQuestionByCompany = async (req: ICustomRequest, res: Response) => {
 				.status(404)
 				.json({ data: [], totalPages, message: "No questions found" });
 		}
-		await client.set(key, JSON.stringify({ data:questions, totalPages }), {EX: REDIS_EXPIRY});
+		await client.set(key, JSON.stringify({ data: questions, totalPages }), { EX: REDIS_EXPIRY });
 		return res.status(200).json({ data: questions, totalPages });
 	} catch (error) {
 		console.error("Error fetching paginated questions by category:", error);
@@ -228,10 +225,10 @@ const modifyQuestion = async (req: ICustomRequest, res: Response) => {
 	}
 };
 
-const searchLikeQuestions = async(req:ICustomRequest, res:Response)=>{
+const searchLikeQuestions = async (req: ICustomRequest, res: Response) => {
 	const query = req.params
 	try {
-		const questions = Question.find({title: { $regex: '.*' + query + '.*' }},
+		const questions = Question.find({ title: { $regex: '.*' + query + '.*' } },
 			"questionNo slug title marks"
 		).limit(5);
 		return res.status(200).json(questions)
@@ -249,5 +246,5 @@ export {
 	getQuestionByCategoty,
 	getQuestionByTopic,
 	getQuestionByCompany,
-	searchLikeQuestions,
+	searchLikeQuestions
 };
