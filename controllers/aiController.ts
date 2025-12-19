@@ -127,3 +127,47 @@ export const aiImproveCode = async (req: ICustomRequest, res: Response) => {
         return res.status(500).json({ message: "Internal Server Error", error });
     }
 }
+export const chatWithAI = async (req: ICustomRequest, res: Response) => {
+    const { messages, context, apiKey } = req.body; // messages is an array of { role: 'user' | 'model', content: string }
+    const user = req.username;
+
+    if (!user) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+        let aiCall;
+        if (!apiKey) {
+            const { allowed, aiCallCount } = await checkAiLimit(user);
+            aiCall = aiCallCount;
+            if (!allowed) {
+                return res.status(405).json({ message: "No calls left for today" });
+            }
+        }
+
+        const history = messages.slice(0, -1).map((m: any) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join("\n");
+        const lastMessage = messages[messages.length - 1].content;
+
+        const promptPath = path.join(__dirname, "../prompts/chatTutor.txt");
+        let promptTemplate = await fs.readFile(promptPath, "utf-8");
+
+        const finalPrompt = promptTemplate
+            .replace("{context}", context || "General Chat")
+            .replace("{history}", history)
+            .replace("{message}", lastMessage);
+
+        const response = await runModel(finalPrompt, apiKey);
+
+        if (!apiKey && aiCall) {
+            aiCall.count -= 1;
+            await aiCall.save();
+        }
+
+        addAiLogJob({ username: user, prompt: finalPrompt, response, apiKey });
+        return res.status(200).json({ response });
+
+    } catch (error) {
+        console.error("AI Chat Error:", error);
+        return res.status(500).json({ message: "Internal Server Error", error });
+    }
+}

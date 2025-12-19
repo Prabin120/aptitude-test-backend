@@ -4,6 +4,7 @@ import ICustomRequest from "../utils/customRequest";
 import { Response } from "express";
 import client from "../utils/redis";
 import { REDIS_EXPIRY } from "../consts";
+import questions from "../models/questions";
 
 const addCategory = async (req: ICustomRequest, res: Response) => {
     try {
@@ -60,12 +61,15 @@ const addQuestionTag = async (req: ICustomRequest, res: Response) => {
 
 const getQuestionTags = async (req: ICustomRequest, res: Response) => {
     const key = req.originalUrl;
+    const { search = "" } = req.query;
+    console.log(key, search)
     try {
         const [categories, topics, companies] = await Promise.all([
-            AptiQuestionCategories.find({}).select("-createdAt -updatedAt -__v"),
-            AptiQuestionTopics.find({}).select("-createdAt -updatedAt -__v"),
-            AptiQuestionCompanies.find({}).select("-createdAt -updatedAt -__v")
+            AptiQuestionCategories.find({ value: { $regex: search, $options: "i" } }).select("-createdAt -updatedAt -__v").limit(6),
+            AptiQuestionTopics.find({ value: { $regex: search, $options: "i" } }).select("-createdAt -updatedAt -__v").limit(6),
+            AptiQuestionCompanies.find({ value: { $regex: search, $options: "i" } }).select("-createdAt -updatedAt -__v").limit(6)
         ]);
+        console.log(categories, topics, companies)
         await client.set(key, JSON.stringify({ categories, topics, companies }), { EX: REDIS_EXPIRY });
         return res.status(200).json({ categories, topics, companies });
     } catch (error) {
@@ -73,4 +77,40 @@ const getQuestionTags = async (req: ICustomRequest, res: Response) => {
     }
 }
 
-export { addQuestionTag, getQuestionTags };
+const getQuestionTagBasedOnTopic = async (req: ICustomRequest, res: Response) => {
+    try {
+        const key = req.originalUrl;
+        const { search = "" } = req.query;
+        const questions = await AptiQuestionTopics.find({ value: { $regex: search, $options: "i" } }).select("-createdAt -updatedAt -__v");
+        await client.set(key, JSON.stringify({ questions }), { EX: REDIS_EXPIRY });
+        return res.status(200).json({ questions, search });
+    } catch (error) {
+        return res.status(500).json({ message: "Server error" });
+    }
+}
+
+const getQuestionTagBasedOnCompany = async (req: ICustomRequest, res: Response) => {
+    try {
+        const key = req.originalUrl;
+        const { search = "" } = req.query;
+        const questions = await AptiQuestionCompanies.find({ value: { $regex: search, $options: "i" } }).select("-createdAt -updatedAt -__v");
+        await client.set(key, JSON.stringify({ questions }), { EX: REDIS_EXPIRY });
+        return res.status(200).json({ questions, search });
+    } catch (error) {
+        return res.status(500).json({ message: "Server error" });
+    }
+}
+
+const getQuestionTagBasedOnCategory = async (req: ICustomRequest, res: Response) => {
+    try {
+        const key = req.originalUrl;
+        const { search = "" } = req.query;
+        const questions = await AptiQuestionCategories.find({ value: { $regex: search, $options: "i" } }).select("-createdAt -updatedAt -__v");
+        await client.set(key, JSON.stringify({ questions }), { EX: REDIS_EXPIRY });
+        return res.status(200).json({ questions, search });
+    } catch (error) {
+        return res.status(500).json({ message: "Server error" });
+    }
+}
+
+export { addQuestionTag, getQuestionTags, getQuestionTagBasedOnTopic, getQuestionTagBasedOnCompany, getQuestionTagBasedOnCategory };

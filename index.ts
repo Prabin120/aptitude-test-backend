@@ -12,6 +12,7 @@ import servicesRouter from './routes/servicesRoute';
 import rewardRouter from './routes/rewardRoute';
 import aiRouter from './routes/aiRoute';
 import blogRouter from './routes/blogRoute';
+import notesRouter from './routes/notesRoute';
 import slowDown from 'express-slow-down';
 import { initialLogging, errorLogging } from './middlewares/logging';
 import { connectRedis } from './utils/redis';
@@ -63,6 +64,7 @@ app.use('/p/api/v1/services', servicesRouter);
 app.use('/p/api/v1/reward', rewardRouter);
 app.use('/p/api/v1/ai', aiRouter);
 app.use('/p/api/v1/blog', blogRouter);
+app.use('/p/api/v1/notes', notesRouter);
 
 app.use(errorLogging);
 
