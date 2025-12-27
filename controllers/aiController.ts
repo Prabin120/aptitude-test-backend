@@ -69,6 +69,16 @@ const getImproveCodePrompt = async (code: string) => {
     return promptText.replace("{code}", code);
 }
 
+const getFixErrorPrompt = async (language: string, code: string, error: string) => {
+    const promptPath = path.join(__dirname, "../prompts/fixError.txt");
+    const promptText = await fs.readFile(promptPath, "utf-8");
+    return promptText
+        .replace("{language}", language)
+        .replace("{code}", code)
+        .replace("{error}", error);
+}
+
+
 export const aiGenerateCode = async (req: ICustomRequest, res: Response) => {
     const { language, prompt, apiKey } = req.body;
     const user = req.username;
@@ -171,3 +181,34 @@ export const chatWithAI = async (req: ICustomRequest, res: Response) => {
         return res.status(500).json({ message: "Internal Server Error", error });
     }
 }
+
+export const aiFixError = async (req: ICustomRequest, res: Response) => {
+    const { language, code, error, apiKey } = req.body;
+    const user = req.username;
+    if (!user) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+        let aiCall;
+        if (!apiKey) {
+            const { allowed, aiCallCount } = await checkAiLimit(user);
+            aiCall = aiCallCount;
+            if (!allowed) {
+                return res.status(405).json({ message: "No calls left for today" });
+            }
+        }
+        const finalPrompt = await getFixErrorPrompt(language, code, error);
+        const response = await runModel(finalPrompt, apiKey);
+        if (!apiKey && aiCall) {
+            aiCall.count -= 1;
+            await aiCall.save();
+        }
+        addAiLogJob({ username: user, prompt: finalPrompt, response, apiKey });
+        return res.status(200).json({ response });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal Server Error", error });
+    }
+}
+
