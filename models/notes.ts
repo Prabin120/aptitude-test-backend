@@ -6,6 +6,7 @@ export interface INote extends Document {
     domain: "aptitude" | "coding" | "general";
     content: string;
     tags?: string[];
+    location?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -22,6 +23,7 @@ const NoteSchema: Schema = new Schema(
         },
         content: { type: String, required: true },
         tags: { type: [String], default: [] },
+        location: { type: String, required: false },
     },
     { timestamps: true }
 );

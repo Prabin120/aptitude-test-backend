@@ -4,7 +4,7 @@ import Note from "../models/notes";
 
 const createNote = async (req: ICustomRequest, res: Response) => {
     try {
-        const { slug, domain, content, tags } = req.body;
+        const { slug, domain, content, tags, location } = req.body;
         const username = req.username;
 
         if (!username) {
@@ -26,7 +26,8 @@ const createNote = async (req: ICustomRequest, res: Response) => {
             slug,
             domain,
             content,
-            tags
+            tags,
+            location
         });
 
         return res.status(201).json(newNote);
@@ -82,7 +83,7 @@ const getAllNotes = async (req: ICustomRequest, res: Response) => {
 const updateNote = async (req: ICustomRequest, res: Response) => {
     try {
         const { slug } = req.params; // Identifier in URL
-        const { content, tags, domain } = req.body;
+        const { content, tags, domain, location } = req.body;
         const username = req.username;
 
         if (!username) {
@@ -97,6 +98,7 @@ const updateNote = async (req: ICustomRequest, res: Response) => {
         if (content !== undefined) note.content = content;
         if (tags !== undefined) note.tags = tags;
         if (domain !== undefined) note.domain = domain;
+        if (location !== undefined) note.location = location;
 
         await note.save();
         return res.status(200).json(note);
