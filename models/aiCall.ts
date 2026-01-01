@@ -8,6 +8,8 @@ const aiCallSchema = new mongoose.Schema({
     prompt: { type: String, required: true },
     response: { type: String, required: true },
     apiKey: { type: String, required: false },
+    conversationId: { type: String, index: true, required: false }, // Group messages by conversation
+    context: { type: String, required: false }, // Store page context/slug
 }, { timestamps: true })
 
 const AiCall = mongoose.model('AiCall', aiCallSchema)
