@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import Queue from "bull";
-import { transporter } from "./mailService";
+import { sendMail } from "./mailService";
+
+const fromInfo = `AptiCode Info <info@apticode.in>`;
 import { groupTestBody, groupTestSubject } from "./mailTemplates/groupTestTemplate";
 import GroupTestMailStatus from "../models/groupTestMailStatus";
 import dns from 'dns/promises';
@@ -39,12 +41,7 @@ emailQueue.process(async (job) => {
         if (!isValid) {
             throw new Error(`Invalid email address: ${to}`);
         }
-        await transporter.sendMail({
-            from: process.env.MAIL_ID,
-            to,
-            subject,
-            html
-        });
+        await sendMail(fromInfo, to, subject, html);
         if (!resend) await GroupTestMailStatus.create({ email: to, status: 'sent', test: testId });
         else await GroupTestMailStatus.findOneAndUpdate({ email: to, test: testId }, { status: 'sent' });
     } catch (error) {

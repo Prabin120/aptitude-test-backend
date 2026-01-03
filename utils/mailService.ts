@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import dotenv from "dotenv";
 import {
     forgotPasswordBody,
@@ -10,23 +10,20 @@ import {
 } from "./mailTemplates/feedbackResponse";
 dotenv.config();
 
-// Create a transporter object
-export const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // use SSL
-    auth: {
-        user: process.env.MAIL_ID,
-        pass: process.env.APP_PASSWORD,
-    },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Configure the mailoptions object
-const mailOptions = {
-    from: process.env.MAIL_ID,
-    to: process.env.PERSONAL_EMAIL_ID,
-    subject: "",
-    html: "",
+const fromInfo = `AptiCode Info <info@apticode.in>`;
+const fromSupport = `AptiCode Support <support@apticode.in>`;
+
+const sendMail = async (from: string, to: string, subject: string, html: string) => {
+    if (!to) return false;
+    try {
+        await resend.emails.send({ from, to, subject, html });
+        return true;
+    } catch (error) {
+        console.error("Error sending email:", error);
+        return false;
+    }
 };
 
 const sendMailResetPasswordMail = async (
@@ -34,152 +31,77 @@ const sendMailResetPasswordMail = async (
     receipantMailId: string,
     resetLink: string
 ) => {
-    if (!receipantMailId) {
-        return false;
-    }
-    try {
-        mailOptions.to = receipantMailId;
-        mailOptions.subject = forgotPasswordSubject;
-        mailOptions.html = forgotPasswordBody(receipantName, resetLink);
-        transporter.sendMail(mailOptions);
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false;
-    }
+    const html = forgotPasswordBody(receipantName, resetLink);
+    return sendMail(fromSupport, receipantMailId, forgotPasswordSubject, html);
 };
+
 const sendMailGotFeedback = async (
     receipantName: string,
     receipantMailId: string,
     subject: string,
     message: string
 ) => {
-    if (!receipantMailId) {
-        return false;
-    }
-    try {
-        mailOptions.to = process.env.PERSONAL_EMAIL_ID;
-        mailOptions.subject = "Feedback AptiCode";
-        mailOptions.html = `
-            Mail from ${receipantMailId}
-            Name: ${receipantName}
-            Feedback Subject: ${subject}
-            Feedback Message: ${message}
-        `;
-        const info = await transporter.sendMail(mailOptions);
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false;
-    }
+    const html = `
+        Mail from ${receipantMailId}<br>
+        Name: ${receipantName}<br>
+        Feedback Subject: ${subject}<br>
+        Feedback Message: ${message}
+    `;
+    const personalEmail = process.env.PERSONAL_EMAIL_ID as string;
+    return sendMail(fromInfo, personalEmail, "Feedback AptiCode", html);
 };
+
 const sendMailFeedbackResponse = async (
     receipantName: string,
     receipantMailId: string
 ) => {
-    if (!receipantMailId) {
-        return false;
-    }
-    try {
-        mailOptions.to = receipantMailId;
-        mailOptions.subject = feedbackResponseSubject;
-        mailOptions.html = feedbackResponseBody(receipantName);
-        const info = await transporter.sendMail(mailOptions);
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false;
-    }
+    const html = feedbackResponseBody(receipantName);
+    return sendMail(fromSupport, receipantMailId, feedbackResponseSubject, html);
 };
 
 const requestingForCreatorAccess = async (receipantMailId: string, username: string) => {
-    if (!receipantMailId) {
-        return false;
-    }
-    try {
-        mailOptions.to = process.env.PERSONAL_EMAIL_ID;
-        mailOptions.subject = "Request for Creator Access";
-        mailOptions.html = `
-            Mail from ${receipantMailId}
-            Username: ${username}
-        `;
-        const info = await transporter.sendMail(mailOptions);
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false;
-    }
+    const html = `
+        Mail from ${receipantMailId}<br>
+        Username: ${username}
+    `;
+    const personalEmail = process.env.PERSONAL_EMAIL_ID as string;
+    return sendMail(fromInfo, personalEmail, "Request for Creator Access", html);
 };
 
 const sentEmailVerificationMail = async (name: string, receipantMailId: string, link: string) => {
-    if (!receipantMailId) {
-        return false;
-    }
-    try {
-        mailOptions.to = receipantMailId;
-        mailOptions.subject = "Email Verification";
-        mailOptions.html = `
-            <h1>Hello ${name},</h1>
-            <p>Click on the link to verify your email address:</p>
-            <a href="${link}">Verify Email</a>
-        `;
-        const info = await transporter.sendMail(mailOptions);
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false;
-    }
+    const html = `
+        <h1>Hello ${name},</h1>
+        <p>Click on the link to verify your email address:</p>
+        <a href="${link}">Verify Email</a>
+    `;
+    return sendMail(fromSupport, receipantMailId, "Email Verification", html);
 };
 
 const sendQuestionApprovedMail = async (receipantName: string, receipantMailId: string, questionNo: number, questionTitle: string) => {
-    if (!receipantMailId) {
-        return false;
-    }
-    try {
-        mailOptions.to = receipantMailId;
-        mailOptions.subject = "Question Approved";
-        mailOptions.html = `
-            Hi, ${receipantName},
-            Your question has been approved and live now. Your coins will be added to your wallet soon.
-
-            Question No: ${questionNo}
-            Question Title: ${questionTitle}
-        `;
-        const info = await transporter.sendMail(mailOptions);
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false;
-    }
+    const html = `
+        Hi, ${receipantName},<br>
+        Your question has been approved and is live now. Your coins will be added to your wallet soon.<br><br>
+        Question No: ${questionNo}<br>
+        Question Title: ${questionTitle}
+    `;
+    return sendMail(fromInfo, receipantMailId, "Question Approved", html);
 }
 
 const sendQuestionRejectedMail = async (receipantName: string, receipantMailId: string, questionNo: number, questionTitle: string, feedback: string) => {
-    if (!receipantMailId) {
-        return false;
-    }
-    try {
-        mailOptions.to = receipantMailId;
-        mailOptions.subject = "Question Rejected";
-        mailOptions.html = `
-            Hi, ${receipantName},
-            Your question has been rejected by our team.
-            Please follow the feedback and resend it again.
-            Feedback: 
-            ${feedback}
-
-
-            Question No: ${questionNo}
-            Question Title: ${questionTitle}
-        `;
-        const info = await transporter.sendMail(mailOptions);
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false;
-    }
+    const html = `
+        Hi, ${receipantName},<br>
+        Your question has been rejected by our team.<br>
+        Please follow the feedback and resend it again.<br>
+        Feedback: <br>
+        ${feedback}<br><br>
+        Question No: ${questionNo}<br>
+        Question Title: ${questionTitle}
+    `;
+    return sendMail(fromInfo, receipantMailId, "Question Rejected", html);
 }
 
 export {
+    sendMail,
     sendMailFeedbackResponse,
     sendMailGotFeedback,
     sendMailResetPasswordMail,
